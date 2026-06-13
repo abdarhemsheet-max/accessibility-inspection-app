@@ -11,7 +11,7 @@ if exist deploy-github.mjs del deploy-github.mjs
 
 :: إضافة ودفع
 git add -A
-git commit -m "النظام الكامل - $(date)"
+git commit -m "النظام الكامل - %date%"
 git push origin master
 
 echo.
