@@ -35,9 +35,9 @@ import {
   FileDown,
 } from 'lucide-react'
 
-// SUPABASE CONFIGURATION (اختياري - التطبيق يعمل محلياً بدونه)
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || ''
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+// SUPABASE CONFIGURATION
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://gffszrqotpzdztpltivr.supabase.co'
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_WrJUBB1n_Zdb0m6h6exTHQ_nfL59WS2'
 
 const getSupabase = () => {
   if (!supabaseUrl || !supabaseAnonKey) return null
