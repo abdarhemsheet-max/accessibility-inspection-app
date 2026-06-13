@@ -640,6 +640,179 @@ export default function App() {
     }
   }
 
+  const exportArchivePDF = async (report) => {
+    if (!report.facility_name) {
+      showToast('بيانات التقرير غير مكتملة', 'warning')
+      return
+    }
+    setPdfExporting(true)
+    try {
+      const today = new Date().toLocaleDateString('ar-SA')
+      const todayIso = new Date().toISOString().split('T')[0]
+      const reportNum = String(report.id).slice(-6)
+      const evals = report.evaluation_data || {}
+      const evRows = EVALUATION_ROWS.map(row => {
+        const ev = evals[row.id] || {}
+        return { ...row, status: ev.status || '', notes: ev.notes || '' }
+      })
+
+      const statusBadge = (status) => {
+        if (status === 'جاهز ومناسب') return '<span style="background:#dcfce7;color:#166534;font-weight:700;padding:2px 10px;border:1px solid #86efac;border-radius:2px;font-size:11px;">جاهز ومناسب</span>'
+        if (status === 'يحتاج تعديل') return '<span style="background:#fef9c3;color:#854d0e;font-weight:700;padding:2px 10px;border:1px solid #fde047;border-radius:2px;font-size:11px;">يحتاج تعديل</span>'
+        return '<span style="color:#9ca3af;font-size:11px;">—</span>'
+      }
+
+      const contentOrEmpty = (val) => val && val.trim() ? val : 'لم تسجل ملاحظات إضافية في هذا البند.'
+
+      const el = pdfTemplateRef.current
+      if (!el) throw new Error('Template ref not found')
+
+      el.innerHTML = `
+<div dir="rtl" style="width:794px;min-height:1123px;background:#fff;padding:0;font-family:'Cairo','Traditional Arabic',Arial,sans-serif;color:#111827;">
+  <style>
+    .a4-page { padding: 15mm 18mm; }
+    .official-table th, .official-table td { border: 1px solid #d1d5db; }
+    @media print { body { background:#fff; } }
+  </style>
+  <div class="a4-page">
+    <header style="border-bottom:2px solid #1f2937;padding-bottom:12px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:flex-end;">
+      <div style="text-align:right;">
+        <h1 style="font-size:22px;font-weight:800;color:#111827;margin:0 0 4px;">نظام تقييم الوصول الشامل</h1>
+        <p style="font-size:16px;font-weight:600;color:#374151;margin:0;">قسم ذوي الإعاقة والاحتياجات الخاصة</p>
+      </div>
+      <div style="text-align:left;font-size:12px;font-weight:600;color:#374151;">
+        <div style="margin-bottom:4px;">رقم التقرير: <span style="font-family:monospace;">${reportNum}</span></div>
+        <div style="margin-bottom:4px;">تاريخ الإصدار: <span dir="ltr">${report.visit_date || todayIso}</span></div>
+      </div>
+    </header>
+
+    <section style="margin-bottom:20px;">
+      <h2 style="font-size:16px;font-weight:700;color:#1f2937;margin:0 0 12px;border-right:4px solid #1f2937;padding-right:8px;">أولاً: بيانات الزيارة والمرفق</h2>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;border:1px solid #d1d5db;padding:14px;background:#f9fafb;">
+        <div style="display:flex;flex-direction:column;">
+          <span style="font-size:11px;color:#6b7280;font-weight:700;margin-bottom:2px;">اسم المرفق / المركز</span>
+          <span style="font-size:14px;font-weight:700;color:#111827;">${report.facility_name || '—'}</span>
+        </div>
+        <div style="display:flex;flex-direction:column;">
+          <span style="font-size:11px;color:#6b7280;font-weight:700;margin-bottom:2px;">المنطقة / المحلة</span>
+          <span style="font-size:14px;font-weight:700;color:#111827;">${report.region || '—'}</span>
+        </div>
+        <div style="display:flex;flex-direction:column;">
+          <span style="font-size:11px;color:#6b7280;font-weight:700;margin-bottom:2px;">تاريخ الزيارة الميدانية</span>
+          <span style="font-size:14px;font-weight:700;color:#111827;" dir="ltr">${report.visit_date || '—'}</span>
+        </div>
+        <div style="display:flex;flex-direction:column;">
+          <span style="font-size:11px;color:#6b7280;font-weight:700;margin-bottom:2px;">إجمالي الحالات المرصودة</span>
+          <span style="font-size:14px;font-weight:700;color:#111827;">${report.cases_count ?? 0} حالة</span>
+        </div>
+      </div>
+    </section>
+
+    <section style="margin-bottom:20px;">
+      <h2 style="font-size:16px;font-weight:700;color:#1f2937;margin:0 0 12px;border-right:4px solid #1f2937;padding-right:8px;">ثانياً: نتائج التقييم الميداني</h2>
+      <table style="width:100%;text-align:right;font-size:13px;border-collapse:collapse;">
+        <thead>
+          <tr style="background:#f3f4f6;color:#1f2937;font-weight:700;">
+            <th style="padding:10px;width:50%;border:1px solid #d1d5db;">محور التقييم</th>
+            <th style="padding:10px;width:25%;text-align:center;border:1px solid #d1d5db;">الحالة الفنية</th>
+            <th style="padding:10px;width:25%;border:1px solid #d1d5db;">ملاحظات فريق الرصد</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${evRows.map((row, i) => `
+            <tr${row.status === 'يحتاج تعديل' ? ' style="background:#fefce8;"' : ''}>
+              <td style="padding:10px;border:1px solid #d1d5db;">
+                <span style="font-weight:700;display:block;font-size:14px;">${row.label}</span>
+                <span style="font-size:11px;color:#4b5563;">${row.subtitle}</span>
+              </td>
+              <td style="padding:10px;text-align:center;vertical-align:middle;border:1px solid #d1d5db;">${statusBadge(row.status)}</td>
+              <td style="padding:10px;color:#4b5563;border:1px solid #d1d5db;${row.notes ? 'font-weight:600;' : ''}">${row.notes || '—'}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </section>
+
+    <section style="margin-bottom:24px;border-top:1px solid #d1d5db;padding-top:16px;">
+      <h2 style="font-size:16px;font-weight:700;color:#1f2937;margin:0 0 16px;border-right:4px solid #1f2937;padding-right:8px;">ثالثاً: التفاصيل الإضافية والتوصيات</h2>
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <div style="border:1px solid #d1d5db;">
+          <div style="background:#f3f4f6;padding:8px 12px;border-bottom:1px solid #d1d5db;font-weight:700;color:#1f2937;">الإيجابيات والممارسات الجيدة</div>
+          <div style="padding:10px 12px;font-size:13px;color:#4b5563;min-height:40px;">${contentOrEmpty(report.positives)}</div>
+        </div>
+        <div style="border:1px solid #d1d5db;">
+          <div style="background:#f3f4f6;padding:8px 12px;border-bottom:1px solid #d1d5db;font-weight:700;color:#1f2937;">السلبيات والعوائق المرصودة</div>
+          <div style="padding:10px 12px;font-size:13px;color:#4b5563;min-height:40px;">${contentOrEmpty(report.negatives)}</div>
+        </div>
+        <div style="border:1px solid #d1d5db;">
+          <div style="background:#f3f4f6;padding:8px 12px;border-bottom:1px solid #d1d5db;font-weight:700;color:#1f2937;">التوصيات والاحتياجات الفعلية</div>
+          <div style="padding:10px 12px;font-size:13px;color:#4b5563;min-height:40px;">${contentOrEmpty(report.recommendations)}</div>
+        </div>
+      </div>
+    </section>
+
+    ${report.final_classification ? `
+    <section style="margin-bottom:24px;">
+      <h2 style="font-size:16px;font-weight:700;color:#1f2937;margin:0 0 12px;border-right:4px solid #1f2937;padding-right:8px;">رابعاً: التصنيف النهائي</h2>
+      <div style="display:inline-block;padding:6px 16px;font-size:14px;font-weight:700;border-radius:4px;border:1px solid;background:${report.final_classification === 'مهيأ بالكامل' ? '#dcfce7' : report.final_classification === 'يحتاج تعديلات بسيطة' ? '#fef9c3' : '#fee2e2'};color:${report.final_classification === 'مهيأ بالكامل' ? '#166534' : report.final_classification === 'يحتاج تعديلات بسيطة' ? '#854d0e' : '#991b1b'};border-color:${report.final_classification === 'مهيأ بالكامل' ? '#86efac' : report.final_classification === 'يحتاج تعديلات بسيطة' ? '#fde047' : '#fca5a5'};">${report.final_classification}</div>
+    </section>` : ''}
+
+    <section style="margin-top:40px;display:flex;justify-content:space-between;text-align:center;">
+      <div style="width:45%;">
+        <p style="font-weight:700;color:#1f2937;margin-bottom:24px;">مُعِد التقرير</p>
+        <p style="border-top:1px solid #9ca3af;padding-top:6px;font-size:13px;color:#4b5563;">التوقيع</p>
+      </div>
+      <div style="width:45%;">
+        <p style="font-weight:700;color:#1f2937;margin-bottom:24px;">الاعتماد والمصادقة</p>
+        <p style="border-top:1px solid #9ca3af;padding-top:6px;font-size:13px;color:#4b5563;">التوقيع والختم</p>
+      </div>
+    </section>
+  </div>
+</div>`
+
+      await document.fonts.ready
+      await new Promise(r => setTimeout(r, 500))
+
+      const canvas = await html2canvas(el, {
+        scale: 2,
+        backgroundColor: '#ffffff',
+        logging: false,
+        useCORS: true,
+        windowWidth: 794,
+        width: 794,
+        height: el.scrollHeight,
+      })
+
+      const imgData = canvas.toDataURL('image/png')
+      const imgWidth = 190
+      const imgHeight = (canvas.height * imgWidth) / canvas.width
+
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+      let heightLeft = imgHeight
+      let position = 0
+      const pageHeight = 297
+
+      doc.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight, undefined, 'FAST')
+      heightLeft -= pageHeight
+
+      while (heightLeft > 0) {
+        position -= pageHeight
+        doc.addPage()
+        doc.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight, undefined, 'FAST')
+        heightLeft -= pageHeight
+      }
+
+      doc.save(`تقرير_${report.facility_name.replace(/\s+/g, '_')}.pdf`)
+      el.innerHTML = ''
+      showToast('تم تصدير التقرير PDF بنجاح', 'success')
+    } catch (err) {
+      console.error('Archive PDF export error:', err)
+      showToast('فشل في تصدير PDF - ' + err.message, 'error')
+    } finally {
+      setPdfExporting(false)
+    }
+  }
+
   const formatDate = (dateStr) => {
     if (!dateStr) return '—'
     try {
@@ -1146,6 +1319,17 @@ export default function App() {
                                   hover:border-amber-500/30 hover:bg-amber-500/10 transition-all"
                               >
                                 <Pencil className="w-4 h-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => exportArchivePDF(report)}
+                                disabled={pdfExporting}
+                                title="تصدير PDF"
+                                className="w-9 h-9 rounded-lg bg-white/[0.03] border border-white/[0.06] 
+                                  flex items-center justify-center text-gray-400 hover:text-rose-400 
+                                  hover:border-rose-500/30 hover:bg-rose-500/10 transition-all disabled:opacity-30"
+                              >
+                                <FileDown className="w-4 h-4" />
                               </button>
                               <button
                                 type="button"
