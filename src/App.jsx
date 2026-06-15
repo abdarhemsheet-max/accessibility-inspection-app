@@ -111,12 +111,13 @@ const MOSQUE_LEVELS = [
 
 const DISABILITY_TYPES = ['حركية', 'بصرية', 'سمعية', 'ذهنية', 'توحد', 'متعددة', 'أخرى']
 const MARITAL_STATUSES = ['أعزب', 'متزوج', 'مطلق', 'أرمل']
-const HOUSING_TYPES = ['ملك', 'إيجار']
 const MOBILITY_OPTIONS = ['مستقلة', 'بمساعدة', 'لا يستطيع']
-const COMMUNICATION_OPTIONS = ['جيدة', 'متوسطة', 'صعبة']
-const SELF_RELIANCE_OPTIONS = ['كاملة', 'جزئية', 'لا يستطيع']
 const EDUCATION_LEVELS = ['غير متعلم', 'ابتدائي', 'متوسط', 'ثانوي', 'جامعي', 'دراسات عليا']
 const EMPLOYMENT_STATUSES = ['يعمل', 'لا يعمل']
+const YES_NO_OPTIONS = [
+  { value: 'نعم', color: 'from-emerald-500/20 to-emerald-600/10 border-emerald-500/40 text-emerald-300' },
+  { value: 'لا', color: 'from-red-500/20 to-red-600/10 border-red-500/40 text-red-300' },
+]
 const NEED_LEVELS = [
   { value: 'منخفض', color: 'from-emerald-500/20 to-emerald-600/10 border-emerald-500/40 text-emerald-300' },
   { value: 'متوسط', color: 'from-amber-500/20 to-amber-600/10 border-amber-500/40 text-amber-300' },
@@ -270,16 +271,14 @@ export default function App() {
     visit_date: '', evaluator_name: '', visit_start_time: '', visit_end_time: '',
     facility_evaluations: makeEmptyFacilityEvals(),
     total_percentage: 0, overall_level: '', general_notes: '', recommendations: '', images: [],
-    full_name: '', id_number: '', file_number: '', gender: '', age: '', birth_date: '',
-    marital_status: '', nationality: '', phone: '', guardian_name: '', guardian_phone: '',
-    city: '', detailed_address: '', housing_type: '', family_members: '', map_link: '',
+    full_name: '', gender: '', age: '', birth_date: '', marital_status: '', phone: '', residence_area: '',
     disability_type: '', disability_degree: '', disability_cause: '', injury_date: '',
-    is_permanent: false, uses_wheelchair: false, uses_assistive_devices: false, needs_attendant: false,
-    chronic_diseases: '', medications: '', mental_health: '', mobility: '', communication: '', self_reliance: '',
-    education_level: '', is_studying: false, last_qualification: '', needs_educational_support: false,
+    is_permanent: '', uses_wheelchair: '',
+    chronic_diseases: '', medications: '', mobility: '', health_notes: '',
+    education_level: '', is_studying: '', last_qualification: '',
     employment_status: '', employer: '', occupation: '', monthly_income: '',
-    family_income: '', income_source: '', has_debts: false, debt_amount: '', receives_benefits: false, benefit_type: '',
-    needs: [], other_needs: '', need_level: '', case_description: '', researcher_notes: '', proposed_services: '',
+    family_income: '', income_source: '', receives_benefits: '', benefit_type: '', has_debts: '',
+    needs: [], other_needs: '', need_level: '', case_description: '', proposed_services: '', recommendations: '', general_notes: '',
   })
 
   const [activeTab, setActiveTab] = useState('tab1')
@@ -380,17 +379,14 @@ export default function App() {
       }
       return {
         ...base, recordType: 'disability',
-        full_name: '', id_number: '', file_number: '', gender: '', age: '', birth_date: '',
-        marital_status: '', nationality: '', phone: '', guardian_name: '', guardian_phone: '',
-        city: '', municipality: '', region: '', district: '', detailed_address: '', housing_type: '',
-        family_members: '', map_link: '', disability_type: '', disability_degree: '', disability_cause: '',
-        injury_date: '', is_permanent: false, uses_wheelchair: false, uses_assistive_devices: false,
-        needs_attendant: false, chronic_diseases: '', medications: '', mental_health: '', mobility: '',
-        communication: '', self_reliance: '', education_level: '', is_studying: false,
-        last_qualification: '', needs_educational_support: false, employment_status: '', employer: '',
-        occupation: '', monthly_income: '', family_income: '', income_source: '', has_debts: false,
-        debt_amount: '', receives_benefits: false, benefit_type: '', needs: [], other_needs: '',
-        need_level: '', case_description: '', researcher_notes: '', proposed_services: '',
+        full_name: '', gender: '', age: '', birth_date: '', marital_status: '', phone: '', residence_area: '',
+        disability_type: '', disability_degree: '', disability_cause: '', injury_date: '',
+        is_permanent: '', uses_wheelchair: '',
+        chronic_diseases: '', medications: '', mobility: '', health_notes: '',
+        education_level: '', is_studying: '', last_qualification: '',
+        employment_status: '', employer: '', occupation: '', monthly_income: '',
+        family_income: '', income_source: '', receives_benefits: '', benefit_type: '', has_debts: '',
+        needs: [], other_needs: '', need_level: '', case_description: '', proposed_services: '', recommendations: '', general_notes: '',
       }
     })
     setEditId(null)
@@ -449,29 +445,25 @@ export default function App() {
       total_percentage: report.total_percentage || 0, overall_level: report.overall_level || '',
       general_notes: report.general_notes || '', recommendations: report.recommendations || '',
       images: report.images || [],
-      full_name: report.full_name || '', id_number: report.id_number || '', file_number: report.file_number || '',
-      gender: report.gender || '', age: report.age || '', birth_date: report.birth_date || '',
-      marital_status: report.marital_status || '', nationality: report.nationality || '', phone: report.phone || '',
-      guardian_name: report.guardian_name || '', guardian_phone: report.guardian_phone || '',
-      city: report.city || '', detailed_address: report.detailed_address || '',
-      housing_type: report.housing_type || '', family_members: report.family_members || '', map_link: report.map_link || '',
+      full_name: report.full_name || '', gender: report.gender || '', age: report.age || '',
+      birth_date: report.birth_date || '', marital_status: report.marital_status || '', phone: report.phone || '',
+      residence_area: report.residence_area || '',
       disability_type: report.disability_type || '', disability_degree: report.disability_degree || '',
       disability_cause: report.disability_cause || '', injury_date: report.injury_date || '',
-      is_permanent: report.is_permanent || false, uses_wheelchair: report.uses_wheelchair || false,
-      uses_assistive_devices: report.uses_assistive_devices || false, needs_attendant: report.needs_attendant || false,
+      is_permanent: report.is_permanent || '', uses_wheelchair: report.uses_wheelchair || '',
       chronic_diseases: report.chronic_diseases || '', medications: report.medications || '',
-      mental_health: report.mental_health || '', mobility: report.mobility || '',
-      communication: report.communication || '', self_reliance: report.self_reliance || '',
-      education_level: report.education_level || '', is_studying: report.is_studying || false,
-      last_qualification: report.last_qualification || '', needs_educational_support: report.needs_educational_support || false,
+      mobility: report.mobility || '', health_notes: report.health_notes || '',
+      education_level: report.education_level || '', is_studying: report.is_studying || '',
+      last_qualification: report.last_qualification || '',
       employment_status: report.employment_status || '', employer: report.employer || '',
       occupation: report.occupation || '', monthly_income: report.monthly_income || '',
       family_income: report.family_income || '', income_source: report.income_source || '',
-      has_debts: report.has_debts || false, debt_amount: report.debt_amount || '',
-      receives_benefits: report.receives_benefits || false, benefit_type: report.benefit_type || '',
+      receives_benefits: report.receives_benefits || '', benefit_type: report.benefit_type || '',
+      has_debts: report.has_debts || '',
       needs: report.needs || [], other_needs: report.other_needs || '',
       need_level: report.need_level || '', case_description: report.case_description || '',
-      researcher_notes: report.researcher_notes || '', proposed_services: report.proposed_services || '',
+      proposed_services: report.proposed_services || '', recommendations: report.recommendations || '',
+      general_notes: report.general_notes || '',
     })
     setActiveTab(isMosque ? 'tab1' : 'tab2')
     setEditId(report.id)
@@ -600,73 +592,74 @@ export default function App() {
       const todayIso = new Date().toISOString().split('T')[0]
       const reportNum = Date.now().toString().slice(-6)
       const c = (val) => val && val.trim() ? val : '\u2014'
-      const chk = (val) => val ? 'نعم' : '\u2014'
+      const yn = (v) => v === 'نعم' ? 'نعم' : 'لا'
+      const needsList = formData.needs?.length > 0 ? formData.needs.join(' - ') : '\u2014'
       const el = pdfTemplateRef.current
       if (!el) throw new Error('Template ref not found')
 
       el.innerHTML = `<div dir="rtl" style="width:794px;min-height:1123px;background:#fff;padding:0;font-family:Cairo,Traditonal Arabic,Arial,sans-serif;color:#111827;">
-<style>.a4-page{padding:15mm 18mm}@media print{body{background:#fff}}</style>
+<style>
+.a4-page{padding:15mm 18mm;position:relative}
+.page-footer{position:absolute;bottom:10mm;left:18mm;right:18mm;display:flex;justify-content:space-between;font-size:10px;color:#9ca3af;border-top:1px solid #e5e7eb;padding-top:4px;}
+.logo-placeholder{width:60px;height:60px;background:#e5e7eb;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;color:#6b7280;font-weight:700;border:2px solid #d1d5db;}
+@media print{body{background:#fff}}
+</style>
 <div class="a4-page">
-<header style="border-bottom:2px solid #1f2937;padding-bottom:12px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:flex-end;">
-<div style="text-align:right;"><h1 style="font-size:22px;font-weight:800;color:#111827;margin:0 0 4px;">تقييم حالات ذوي الإعاقة</h1><p style="font-size:16px;font-weight:600;color:#374151;margin:0;">قسم ذوي الإعاقة والاحتياجات الخاصة</p></div>
-<div style="text-align:left;font-size:12px;font-weight:600;color:#374151;"><div>رقم الملف: <span style="font-family:monospace;">${reportNum}</span></div><div>تاريخ: <span dir="ltr">${todayIso}</span></div></div>
+<header style="border-bottom:2px solid #1f2937;padding-bottom:12px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;">
+<div style="display:flex;align-items:center;gap:12px;">
+<div class="logo-placeholder">شعار<br/>الجهة</div>
+<div style="text-align:right;"><h1 style="font-size:22px;font-weight:800;color:#111827;margin:0 0 4px;">تقييم حالات ذوي الإعاقة</h1><p style="font-size:14px;font-weight:600;color:#374151;margin:0;">قسم ذوي الإعاقة والاحتياجات الخاصة</p></div>
+</div>
+<div style="text-align:left;font-size:11px;font-weight:600;color:#374151;"><div>رقم: <span style="font-family:monospace;">${reportNum}</span></div><div>تاريخ: <span dir="ltr">${todayIso}</span></div></div>
 </header>
 
-<section style="margin-bottom:16px;">
-<h2 style="font-size:15px;font-weight:700;color:#1f2937;margin:0 0 10px;border-right:4px solid #1f2937;padding-right:8px;">البيانات الشخصية</h2>
-<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;border:1px solid #d1d5db;padding:12px;background:#f9fafb;font-size:12px;">
+<section style="margin-bottom:14px;">
+<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">أولاً: البيانات الشخصية</h2>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;border:1px solid #d1d5db;padding:10px;background:#f9fafb;font-size:11px;">
 <div><span style="font-weight:700;color:#6b7280;display:block;">الاسم الرباعي</span>${formData.full_name}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">رقم الهوية</span>${formData.id_number || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">رقم الملف</span>${formData.file_number || '\u2014'}</div>
 <div><span style="font-weight:700;color:#6b7280;display:block;">الجنس</span>${formData.gender || '\u2014'}</div>
 <div><span style="font-weight:700;color:#6b7280;display:block;">العمر</span>${formData.age || '\u2014'}</div>
 <div><span style="font-weight:700;color:#6b7280;display:block;">تاريخ الميلاد</span>${formData.birth_date || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">الحالة الاجتماعية</span>${formData.marital_status || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">الجنسية</span>${formData.nationality || '\u2014'}</div>
 <div><span style="font-weight:700;color:#6b7280;display:block;">رقم الهاتف</span>${formData.phone || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">ولي الأمر</span>${formData.guardian_name || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">رقم ولي الأمر</span>${formData.guardian_phone || '\u2014'}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">الحالة الاجتماعية</span>${formData.marital_status || '\u2014'}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">منطقة السكن</span>${formData.residence_area || '\u2014'}</div>
 </div>
 </section>
 
-<section style="margin-bottom:16px;">
-<h2 style="font-size:15px;font-weight:700;color:#1f2937;margin:0 0 10px;border-right:4px solid #1f2937;padding-right:8px;">بيانات السكن</h2>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;border:1px solid #d1d5db;padding:12px;background:#f9fafb;font-size:12px;">
-<div><span style="font-weight:700;color:#6b7280;display:block;">المدينة</span>${formData.city || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">البلدية</span>${formData.municipality || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">المنطقة</span>${formData.region || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">الحي</span>${formData.district || '\u2014'}</div>
-<div style="grid-column:span 2;"><span style="font-weight:700;color:#6b7280;display:block;">العنوان</span>${formData.detailed_address || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">نوع السكن</span>${formData.housing_type || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">عدد أفراد الأسرة</span>${formData.family_members || '\u2014'}</div>
-</div>
-</section>
-
-<section style="margin-bottom:16px;">
-<h2 style="font-size:15px;font-weight:700;color:#1f2937;margin:0 0 10px;border-right:4px solid #1f2937;padding-right:8px;">بيانات الإعاقة</h2>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;border:1px solid #d1d5db;padding:12px;background:#f9fafb;font-size:12px;">
+<section style="margin-bottom:14px;">
+<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">ثانياً: بيانات الإعاقة</h2>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;border:1px solid #d1d5db;padding:10px;background:#f9fafb;font-size:11px;">
 <div><span style="font-weight:700;color:#6b7280;display:block;">نوع الإعاقة</span>${formData.disability_type || '\u2014'}</div>
 <div><span style="font-weight:700;color:#6b7280;display:block;">درجة الإعاقة</span>${formData.disability_degree || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">سبب الإعاقة</span>${formData.disability_cause || '\u2014'}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">سبب الإعاقة</span>${c(formData.disability_cause)}</div>
 <div><span style="font-weight:700;color:#6b7280;display:block;">تاريخ الإصابة</span>${formData.injury_date || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">إعاقة دائمة</span>${chk(formData.is_permanent)}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">كرسي متحرك</span>${chk(formData.uses_wheelchair)}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">أجهزة مساعدة</span>${chk(formData.uses_assistive_devices)}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">يحتاج مرافق</span>${chk(formData.needs_attendant)}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">هل الإعاقة دائمة؟</span>${yn(formData.is_permanent)}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">يستخدم كرسياً متحركاً؟</span>${yn(formData.uses_wheelchair)}</div>
 </div>
 </section>
 
-<section style="margin-bottom:16px;">
-<h2 style="font-size:15px;font-weight:700;color:#1f2937;margin:0 0 10px;border-right:4px solid #1f2937;padding-right:8px;">الحالة الصحية والتعليمية والوظيفية</h2>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;border:1px solid #d1d5db;padding:12px;background:#f9fafb;font-size:12px;">
+<section style="margin-bottom:14px;">
+<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">ثالثاً: الحالة الصحية</h2>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;border:1px solid #d1d5db;padding:10px;background:#f9fafb;font-size:11px;">
 <div><span style="font-weight:700;color:#6b7280;display:block;">الأمراض المزمنة</span>${c(formData.chronic_diseases)}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">الأدوية</span>${c(formData.medications)}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">الحالة النفسية</span>${c(formData.mental_health)}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">الحركة</span>${formData.mobility || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">التواصل</span>${formData.communication || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">الاعتماد على النفس</span>${formData.self_reliance || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">المستوى الدراسي</span>${formData.education_level || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">آخر مؤهل</span>${formData.last_qualification || '\u2014'}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">الأدوية المستخدمة</span>${c(formData.medications)}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">القدرة على الحركة</span>${formData.mobility || '\u2014'}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">ملاحظات صحية</span>${c(formData.health_notes)}</div>
+</div>
+</section>
+
+<section style="margin-bottom:14px;">
+<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">رابعاً: الحالة التعليمية</h2>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;border:1px solid #d1d5db;padding:10px;background:#f9fafb;font-size:11px;">
+<div><span style="font-weight:700;color:#6b7280;display:block;">المستوى التعليمي</span>${formData.education_level || '\u2014'}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">هل يدرس حالياً؟</span>${yn(formData.is_studying)}</div>
+<div style="grid-column:span 2;"><span style="font-weight:700;color:#6b7280;display:block;">آخر مؤهل دراسي</span>${c(formData.last_qualification)}</div>
+</div>
+</section>
+
+<section style="margin-bottom:14px;">
+<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">خامساً: الحالة الوظيفية</h2>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;border:1px solid #d1d5db;padding:10px;background:#f9fafb;font-size:11px;">
 <div><span style="font-weight:700;color:#6b7280;display:block;">الحالة الوظيفية</span>${formData.employment_status || '\u2014'}</div>
 <div><span style="font-weight:700;color:#6b7280;display:block;">جهة العمل</span>${formData.employer || '\u2014'}</div>
 <div><span style="font-weight:700;color:#6b7280;display:block;">المهنة</span>${formData.occupation || '\u2014'}</div>
@@ -674,21 +667,48 @@ export default function App() {
 </div>
 </section>
 
-<section style="margin-bottom:16px;">
-<h2 style="font-size:15px;font-weight:700;color:#1f2937;margin:0 0 10px;border-right:4px solid #1f2937;padding-right:8px;">التقييم الاجتماعي</h2>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;border:1px solid #d1d5db;padding:12px;background:#f9fafb;font-size:12px;">
-<div><span style="font-weight:700;color:#6b7280;display:block;">مستوى الحاجة</span>${formData.need_level || '\u2014'}</div>
-<div style="grid-column:span 2;"><span style="font-weight:700;color:#6b7280;display:block;">وصف الحالة</span>${c(formData.case_description)}</div>
-<div style="grid-column:span 2;"><span style="font-weight:700;color:#6b7280;display:block;">ملاحظات الباحث</span>${c(formData.researcher_notes)}</div>
-<div style="grid-column:span 2;"><span style="font-weight:700;color:#6b7280;display:block;">التوصيات</span>${c(formData.recommendations)}</div>
-<div style="grid-column:span 2;"><span style="font-weight:700;color:#6b7280;display:block;">الخدمات المقترحة</span>${c(formData.proposed_services)}</div>
+<section style="margin-bottom:14px;">
+<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">سادساً: الحالة الاقتصادية</h2>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;border:1px solid #d1d5db;padding:10px;background:#f9fafb;font-size:11px;">
+<div><span style="font-weight:700;color:#6b7280;display:block;">دخل الأسرة</span>${formData.family_income || '\u2014'}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">مصدر الدخل</span>${c(formData.income_source)}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">يستفيد من إعانات؟</span>${yn(formData.receives_benefits)}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">نوع الإعانة</span>${formData.benefit_type || '\u2014'}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">هل توجد ديون؟</span>${yn(formData.has_debts)}</div>
 </div>
 </section>
 
-<section style="margin-top:40px;display:flex;justify-content:space-between;text-align:center;">
-<div style="width:45%;"><p style="font-weight:700;color:#1f2937;margin-bottom:24px;">الباحث</p><p style="border-top:1px solid #9ca3af;padding-top:6px;font-size:13px;color:#4b5563;">التوقيع</p></div>
-<div style="width:45%;"><p style="font-weight:700;color:#1f2937;margin-bottom:24px;">الاعتماد</p><p style="border-top:1px solid #9ca3af;padding-top:6px;font-size:13px;color:#4b5563;">التوقيع والختم</p></div>
+<section style="margin-bottom:14px;">
+<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">سابعاً: الاحتياجات</h2>
+<div style="border:1px solid #d1d5db;padding:10px;background:#f9fafb;font-size:11px;">
+<div style="margin-bottom:6px;"><span style="font-weight:700;color:#6b7280;display:block;">الاحتياجات المطلوبة</span>${needsList}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">احتياجات أخرى</span>${c(formData.other_needs)}</div>
+</div>
 </section>
+
+<section style="margin-bottom:14px;">
+<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">ثامناً: التقييم الاجتماعي</h2>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;border:1px solid #d1d5db;padding:10px;background:#f9fafb;font-size:11px;">
+<div><span style="font-weight:700;color:#6b7280;display:block;">مستوى الحاجة</span>${formData.need_level || '\u2014'}</div>
+<div style="grid-column:span 2;"><span style="font-weight:700;color:#6b7280;display:block;">وصف الحالة</span>${c(formData.case_description)}</div>
+<div style="grid-column:span 2;"><span style="font-weight:700;color:#6b7280;display:block;">الخدمات المقترحة</span>${c(formData.proposed_services)}</div>
+<div style="grid-column:span 2;"><span style="font-weight:700;color:#6b7280;display:block;">التوصيات</span>${c(formData.recommendations)}</div>
+</div>
+</section>
+
+<section style="margin-bottom:14px;">
+<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">تاسعاً: الملاحظات العامة</h2>
+<div style="border:1px solid #d1d5db;padding:10px;background:#f9fafb;font-size:11px;min-height:40px;">
+${c(formData.general_notes)}
+</div>
+</section>
+
+<section style="margin-top:30px;display:flex;justify-content:space-between;text-align:center;">
+<div style="width:45%;"><p style="font-weight:700;color:#1f2937;margin-bottom:20px;">المُقيم / الباحث</p><p style="border-top:1px solid #9ca3af;padding-top:6px;font-size:11px;color:#4b5563;">الاسم: _______________ التوقيع: _______________</p><p style="font-size:10px;color:#9ca3af;margin-top:4px;">التاريخ: _______________</p></div>
+<div style="width:45%;"><p style="font-weight:700;color:#1f2937;margin-bottom:20px;">الاعتماد والمصادقة</p><p style="border-top:1px solid #9ca3af;padding-top:6px;font-size:11px;color:#4b5563;">الاسم: _______________ التوقيع: _______________</p><p style="font-size:10px;color:#9ca3af;margin-top:4px;">التاريخ: _______________ الختم: _______________</p></div>
+</section>
+
+<div class="page-footer"><span>قسم ذوي الإعاقة والاحتياجات الخاصة</span><span>صفحة 1 من 1</span></div>
 </div></div>`
 
       await document.fonts.ready
@@ -701,9 +721,11 @@ export default function App() {
       let heightLeft = imgHeight
       let position = 0
       const pageHeight = 297
+      let pageNum = 1
       doc.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight, undefined, 'FAST')
       heightLeft -= pageHeight
       while (heightLeft > 0) {
+        pageNum++
         position -= pageHeight
         doc.addPage()
         doc.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight, undefined, 'FAST')
@@ -772,39 +794,119 @@ export default function App() {
 </section>
 </div></div>`
       } else {
+        const needsList = report.needs?.length > 0 ? report.needs.join(' - ') : '\u2014'
         el.innerHTML = `<div dir="rtl" style="width:794px;min-height:1123px;background:#fff;padding:0;font-family:Cairo,Traditonal Arabic,Arial,sans-serif;color:#111827;">
-<style>.a4-page{padding:15mm 18mm}@media print{body{background:#fff}}</style>
+<style>
+.a4-page{padding:15mm 18mm;position:relative}
+.page-footer{position:absolute;bottom:10mm;left:18mm;right:18mm;display:flex;justify-content:space-between;font-size:10px;color:#9ca3af;border-top:1px solid #e5e7eb;padding-top:4px;}
+.logo-placeholder{width:60px;height:60px;background:#e5e7eb;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;color:#6b7280;font-weight:700;border:2px solid #d1d5db;}
+@media print{body{background:#fff}}
+</style>
 <div class="a4-page">
-<header style="border-bottom:2px solid #1f2937;padding-bottom:12px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:flex-end;">
-<div style="text-align:right;"><h1 style="font-size:22px;font-weight:800;color:#111827;margin:0 0 4px;">تقييم حالات ذوي الإعاقة</h1><p style="font-size:16px;font-weight:600;color:#374151;margin:0;">قسم ذوي الإعاقة والاحتياجات الخاصة</p></div>
-<div style="text-align:left;font-size:12px;font-weight:600;color:#374151;"><div>رقم: <span style="font-family:monospace;">${reportNum}</span></div><div>تاريخ: <span dir="ltr">${todayIso}</span></div></div>
+<header style="border-bottom:2px solid #1f2937;padding-bottom:12px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;">
+<div style="display:flex;align-items:center;gap:12px;">
+<div class="logo-placeholder">شعار<br/>الجهة</div>
+<div style="text-align:right;"><h1 style="font-size:22px;font-weight:800;color:#111827;margin:0 0 4px;">تقييم حالات ذوي الإعاقة</h1><p style="font-size:14px;font-weight:600;color:#374151;margin:0;">قسم ذوي الإعاقة والاحتياجات الخاصة</p></div>
+</div>
+<div style="text-align:left;font-size:11px;font-weight:600;color:#374151;"><div>رقم: <span style="font-family:monospace;">${reportNum}</span></div><div>تاريخ: <span dir="ltr">${todayIso}</span></div></div>
 </header>
-<section style="margin-bottom:16px;">
-<h2 style="font-size:15px;font-weight:700;color:#1f2937;margin:0 0 10px;border-right:4px solid #1f2937;padding-right:8px;">البيانات الشخصية</h2>
-<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;border:1px solid #d1d5db;padding:12px;background:#f9fafb;font-size:12px;">
+
+<section style="margin-bottom:14px;">
+<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">أولاً: البيانات الشخصية</h2>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;border:1px solid #d1d5db;padding:10px;background:#f9fafb;font-size:11px;">
 <div><span style="font-weight:700;color:#6b7280;display:block;">الاسم الرباعي</span>${report.full_name || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">رقم الهوية</span>${report.id_number || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">رقم الملف</span>${report.file_number || '\u2014'}</div>
 <div><span style="font-weight:700;color:#6b7280;display:block;">الجنس</span>${report.gender || '\u2014'}</div>
 <div><span style="font-weight:700;color:#6b7280;display:block;">العمر</span>${report.age || '\u2014'}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">تاريخ الميلاد</span>${report.birth_date || '\u2014'}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">رقم الهاتف</span>${report.phone || '\u2014'}</div>
 <div><span style="font-weight:700;color:#6b7280;display:block;">الحالة الاجتماعية</span>${report.marital_status || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">الجنسية</span>${report.nationality || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">الهاتف</span>${report.phone || '\u2014'}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">منطقة السكن</span>${report.residence_area || '\u2014'}</div>
 </div>
 </section>
-<section style="margin-bottom:16px;">
-<h2 style="font-size:15px;font-weight:700;color:#1f2937;margin:0 0 10px;border-right:4px solid #1f2937;padding-right:8px;">بيانات الإعاقة والتقييم</h2>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;border:1px solid #d1d5db;padding:12px;background:#f9fafb;font-size:12px;">
+
+<section style="margin-bottom:14px;">
+<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">ثانياً: بيانات الإعاقة</h2>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;border:1px solid #d1d5db;padding:10px;background:#f9fafb;font-size:11px;">
 <div><span style="font-weight:700;color:#6b7280;display:block;">نوع الإعاقة</span>${report.disability_type || '\u2014'}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">درجة الإعاقة</span>${report.disability_degree || '\u2014'}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">سبب الإعاقة</span>${c(report.disability_cause)}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">تاريخ الإصابة</span>${report.injury_date || '\u2014'}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">إعاقة دائمة؟</span>${report.is_permanent === 'نعم' ? 'نعم' : 'لا'}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">كرسي متحرك؟</span>${report.uses_wheelchair === 'نعم' ? 'نعم' : 'لا'}</div>
+</div>
+</section>
+
+<section style="margin-bottom:14px;">
+<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">ثالثاً: الحالة الصحية</h2>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;border:1px solid #d1d5db;padding:10px;background:#f9fafb;font-size:11px;">
+<div><span style="font-weight:700;color:#6b7280;display:block;">الأمراض المزمنة</span>${c(report.chronic_diseases)}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">الأدوية المستخدمة</span>${c(report.medications)}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">القدرة على الحركة</span>${report.mobility || '\u2014'}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">ملاحظات صحية</span>${c(report.health_notes)}</div>
+</div>
+</section>
+
+<section style="margin-bottom:14px;">
+<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">رابعاً: الحالة التعليمية</h2>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;border:1px solid #d1d5db;padding:10px;background:#f9fafb;font-size:11px;">
+<div><span style="font-weight:700;color:#6b7280;display:block;">المستوى التعليمي</span>${report.education_level || '\u2014'}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">يدرس حالياً؟</span>${report.is_studying === 'نعم' ? 'نعم' : 'لا'}</div>
+<div style="grid-column:span 2;"><span style="font-weight:700;color:#6b7280;display:block;">آخر مؤهل دراسي</span>${c(report.last_qualification)}</div>
+</div>
+</section>
+
+<section style="margin-bottom:14px;">
+<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">خامساً: الحالة الوظيفية</h2>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;border:1px solid #d1d5db;padding:10px;background:#f9fafb;font-size:11px;">
+<div><span style="font-weight:700;color:#6b7280;display:block;">الحالة الوظيفية</span>${report.employment_status || '\u2014'}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">جهة العمل</span>${report.employer || '\u2014'}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">المهنة</span>${report.occupation || '\u2014'}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">الدخل الشهري</span>${report.monthly_income || '\u2014'}</div>
+</div>
+</section>
+
+<section style="margin-bottom:14px;">
+<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">سادساً: الحالة الاقتصادية</h2>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;border:1px solid #d1d5db;padding:10px;background:#f9fafb;font-size:11px;">
+<div><span style="font-weight:700;color:#6b7280;display:block;">دخل الأسرة</span>${report.family_income || '\u2014'}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">مصدر الدخل</span>${c(report.income_source)}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">يستفيد من إعانات؟</span>${report.receives_benefits === 'نعم' ? 'نعم' : 'لا'}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">نوع الإعانة</span>${report.benefit_type || '\u2014'}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">ديون؟</span>${report.has_debts === 'نعم' ? 'نعم' : 'لا'}</div>
+</div>
+</section>
+
+<section style="margin-bottom:14px;">
+<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">سابعاً: الاحتياجات</h2>
+<div style="border:1px solid #d1d5db;padding:10px;background:#f9fafb;font-size:11px;">
+<div style="margin-bottom:6px;"><span style="font-weight:700;color:#6b7280;display:block;">الاحتياجات</span>${needsList}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">احتياجات أخرى</span>${c(report.other_needs)}</div>
+</div>
+</section>
+
+<section style="margin-bottom:14px;">
+<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">ثامناً: التقييم الاجتماعي</h2>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;border:1px solid #d1d5db;padding:10px;background:#f9fafb;font-size:11px;">
 <div><span style="font-weight:700;color:#6b7280;display:block;">مستوى الحاجة</span>${report.need_level || '\u2014'}</div>
-<div style="grid-column:span 2;"><span style="font-weight:700;color:#6b7280;display:block;">ملاحظات الباحث</span>${c(report.researcher_notes)}</div>
+<div style="grid-column:span 2;"><span style="font-weight:700;color:#6b7280;display:block;">وصف الحالة</span>${c(report.case_description)}</div>
+<div style="grid-column:span 2;"><span style="font-weight:700;color:#6b7280;display:block;">الخدمات المقترحة</span>${c(report.proposed_services)}</div>
 <div style="grid-column:span 2;"><span style="font-weight:700;color:#6b7280;display:block;">التوصيات</span>${c(report.recommendations)}</div>
 </div>
 </section>
-<section style="margin-top:40px;display:flex;justify-content:space-between;text-align:center;">
-<div style="width:45%;"><p style="font-weight:700;color:#1f2937;margin-bottom:24px;">الباحث</p><p style="border-top:1px solid #9ca3af;padding-top:6px;font-size:13px;color:#4b5563;">التوقيع</p></div>
-<div style="width:45%;"><p style="font-weight:700;color:#1f2937;margin-bottom:24px;">الاعتماد</p><p style="border-top:1px solid #9ca3af;padding-top:6px;font-size:13px;color:#4b5563;">التوقيع والختم</p></div>
+
+<section style="margin-bottom:14px;">
+<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">تاسعاً: الملاحظات العامة</h2>
+<div style="border:1px solid #d1d5db;padding:10px;background:#f9fafb;font-size:11px;min-height:40px;">
+${c(report.general_notes)}
+</div>
 </section>
+
+<section style="margin-top:30px;display:flex;justify-content:space-between;text-align:center;">
+<div style="width:45%;"><p style="font-weight:700;color:#1f2937;margin-bottom:20px;">المُقيم / الباحث</p><p style="border-top:1px solid #9ca3af;padding-top:6px;font-size:11px;color:#4b5563;">الاسم: _______________ التوقيع: _______________</p><p style="font-size:10px;color:#9ca3af;margin-top:4px;">التاريخ: _______________</p></div>
+<div style="width:45%;"><p style="font-weight:700;color:#1f2937;margin-bottom:20px;">الاعتماد والمصادقة</p><p style="border-top:1px solid #9ca3af;padding-top:6px;font-size:11px;color:#4b5563;">الاسم: _______________ التوقيع: _______________</p><p style="font-size:10px;color:#9ca3af;margin-top:4px;">التاريخ: _______________ الختم: _______________</p></div>
+</section>
+
+<div class="page-footer"><span>قسم ذوي الإعاقة والاحتياجات الخاصة</span><span>صفحة 1 من 1</span></div>
 </div></div>`
       }
 
@@ -1081,20 +1183,19 @@ export default function App() {
 
         {/* ============ TAB 2: DISABILITY ============ */}
         {activeTab === 'tab2' && (<>
-        {/* Personal Data */}
+
+        {/* 1. Personal Data */}
         <GlassCard className="mb-6">
           <div className="px-6 sm:px-10 py-6 sm:py-8">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 border border-cyan-500/30 flex items-center justify-center"><Users className="w-4 h-4 text-cyan-400" /></div>
-              <h2 className="text-xl font-bold text-white">البيانات الشخصية</h2>
+              <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 border border-cyan-500/30"><Users className="w-4 h-4 text-cyan-400" /></div>
+              <h2 className="text-xl font-bold text-white">أولاً: البيانات الشخصية</h2>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               <GlassInput label="الاسم الرباعي" icon={Users} required value={formData.full_name} onChange={(e) => handleChange('full_name', e.target.value)} placeholder="الاسم الرباعي" />
-              <GlassInput label="رقم الهوية" icon={ListChecks} value={formData.id_number} onChange={(e) => handleChange('id_number', e.target.value)} placeholder="رقم الهوية" />
-              <GlassInput label="رقم الملف" icon={FileText} value={formData.file_number} onChange={(e) => handleChange('file_number', e.target.value)} placeholder="رقم الملف" />
               <GlassInput label="الجنس" icon={Users}>
                 <select value={formData.gender} onChange={(e) => handleChange('gender', e.target.value)}
-                  className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-gray-300 outline-none transition-all duration-300 appearance-none cursor-pointer focus:border-cyan-500/50 focus:bg-white/[0.06]">
+                  className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-gray-300 outline-none transition-all appearance-none cursor-pointer focus:border-cyan-500/50 focus:bg-white/[0.06]">
                   <option value="" className="bg-[#0B0F19]">اختر</option>
                   <option value="ذكر" className="bg-[#0B0F19]">ذكر</option>
                   <option value="أنثى" className="bg-[#0B0F19]">أنثى</option>
@@ -1105,159 +1206,104 @@ export default function App() {
                 <input type="date" value={formData.birth_date} onChange={(e) => handleChange('birth_date', e.target.value)}
                   className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-gray-300 outline-none transition-all duration-300 focus:border-cyan-500/50 focus:bg-white/[0.06] [&::-webkit-calendar-picker-indicator]:filter [&::-webkit-calendar-picker-indicator]:invert-[0.7]" />
               </GlassInput>
+              <GlassInput label="رقم الهاتف (إن وجد)" icon={ListChecks} type="tel" value={formData.phone} onChange={(e) => handleChange('phone', e.target.value)} placeholder="رقم الهاتف" />
               <GlassInput label="الحالة الاجتماعية" icon={Users}>
                 <select value={formData.marital_status} onChange={(e) => handleChange('marital_status', e.target.value)}
-                  className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-gray-300 outline-none transition-all duration-300 appearance-none cursor-pointer focus:border-cyan-500/50 focus:bg-white/[0.06]">
+                  className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-gray-300 outline-none transition-all appearance-none cursor-pointer focus:border-cyan-500/50 focus:bg-white/[0.06]">
                   <option value="" className="bg-[#0B0F19]">اختر</option>
                   {MARITAL_STATUSES.map(s => <option key={s} value={s} className="bg-[#0B0F19]">{s}</option>)}
                 </select>
               </GlassInput>
-              <GlassInput label="الجنسية" icon={MapPin} value={formData.nationality} onChange={(e) => handleChange('nationality', e.target.value)} placeholder="الجنسية" />
-              <GlassInput label="رقم الهاتف" icon={ListChecks} type="tel" value={formData.phone} onChange={(e) => handleChange('phone', e.target.value)} placeholder="رقم الهاتف" />
-              <GlassInput label="اسم ولي الأمر" icon={Users} value={formData.guardian_name} onChange={(e) => handleChange('guardian_name', e.target.value)} placeholder="اسم ولي الأمر" />
-              <GlassInput label="رقم ولي الأمر" icon={ListChecks} type="tel" value={formData.guardian_phone} onChange={(e) => handleChange('guardian_phone', e.target.value)} placeholder="رقم ولي الأمر" />
+              <GlassInput label="منطقة السكن" icon={MapPin} value={formData.residence_area} onChange={(e) => handleChange('residence_area', e.target.value)} placeholder="منطقة السكن" />
             </div>
           </div>
         </GlassCard>
 
-        {/* Residence */}
+        {/* 2. Disability Data */}
         <GlassCard className="mb-6">
           <div className="px-6 sm:px-10 py-6 sm:py-8">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 border border-cyan-500/30 flex items-center justify-center"><MapPin className="w-4 h-4 text-cyan-400" /></div>
-              <h2 className="text-xl font-bold text-white">بيانات السكن</h2>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              <GlassInput label="المدينة" icon={MapPin} value={formData.city} onChange={(e) => handleChange('city', e.target.value)} placeholder="المدينة" />
-              <GlassInput label="البلدية" icon={MapPin} value={formData.municipality} onChange={(e) => handleChange('municipality', e.target.value)} placeholder="البلدية" />
-              <GlassInput label="المنطقة" icon={MapPin} value={formData.region} onChange={(e) => handleChange('region', e.target.value)} placeholder="المنطقة" />
-              <GlassInput label="الحي" icon={MapPin} value={formData.district} onChange={(e) => handleChange('district', e.target.value)} placeholder="الحي" />
-              <div className="sm:col-span-2 lg:col-span-2">
-                <GlassTextarea label="العنوان بالتفصيل" icon={MapPin} value={formData.detailed_address} onChange={(e) => handleChange('detailed_address', e.target.value)} placeholder="العنوان بالتفصيل" />
-              </div>
-              <GlassInput label="نوع السكن" icon={Building2}>
-                <select value={formData.housing_type} onChange={(e) => handleChange('housing_type', e.target.value)}
-                  className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-gray-300 outline-none transition-all duration-300 appearance-none cursor-pointer focus:border-cyan-500/50 focus:bg-white/[0.06]">
-                  <option value="" className="bg-[#0B0F19]">اختر</option>
-                  {HOUSING_TYPES.map(t => <option key={t} value={t} className="bg-[#0B0F19]">{t}</option>)}
-                </select>
-              </GlassInput>
-              <GlassInput label="عدد أفراد الأسرة" icon={Users} type="number" value={formData.family_members} onChange={(e) => handleChange('family_members', e.target.value)} placeholder="عدد أفراد الأسرة" />
-              <GlassInput label="الموقع على الخريطة" icon={MapPin} value={formData.map_link} onChange={(e) => handleChange('map_link', e.target.value)} placeholder="رابط خرائط Google" />
-            </div>
-          </div>
-        </GlassCard>
-
-        {/* Disability Data */}
-        <GlassCard className="mb-6">
-          <div className="px-6 sm:px-10 py-6 sm:py-8">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 border border-cyan-500/30 flex items-center justify-center"><ClipboardCheck className="w-4 h-4 text-cyan-400" /></div>
-              <h2 className="text-xl font-bold text-white">بيانات الإعاقة</h2>
+              <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 border border-cyan-500/30"><ClipboardCheck className="w-4 h-4 text-cyan-400" /></div>
+              <h2 className="text-xl font-bold text-white">ثانياً: بيانات الإعاقة</h2>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               <GlassInput label="نوع الإعاقة" icon={Users}>
                 <select value={formData.disability_type} onChange={(e) => handleChange('disability_type', e.target.value)}
-                  className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-gray-300 outline-none transition-all duration-300 appearance-none cursor-pointer focus:border-cyan-500/50 focus:bg-white/[0.06]">
+                  className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-gray-300 outline-none transition-all appearance-none cursor-pointer focus:border-cyan-500/50 focus:bg-white/[0.06]">
                   <option value="" className="bg-[#0B0F19]">اختر</option>
                   {DISABILITY_TYPES.map(t => <option key={t} value={t} className="bg-[#0B0F19]">{t}</option>)}
                 </select>
               </GlassInput>
               <GlassInput label="درجة الإعاقة" icon={ListChecks} value={formData.disability_degree} onChange={(e) => handleChange('disability_degree', e.target.value)} placeholder="درجة الإعاقة" />
               <GlassInput label="سبب الإعاقة" icon={FileText} value={formData.disability_cause} onChange={(e) => handleChange('disability_cause', e.target.value)} placeholder="سبب الإعاقة" />
-              <GlassInput label="تاريخ الإصابة" icon={Calendar}>
+              <GlassInput label="تاريخ الإصابة (إن وجد)" icon={Calendar}>
                 <input type="date" value={formData.injury_date} onChange={(e) => handleChange('injury_date', e.target.value)}
                   className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-gray-300 outline-none transition-all duration-300 focus:border-cyan-500/50 focus:bg-white/[0.06] [&::-webkit-calendar-picker-indicator]:filter [&::-webkit-calendar-picker-indicator]:invert-[0.7]" />
               </GlassInput>
-              <div className="space-y-3">
-                {['is_permanent', 'uses_wheelchair', 'uses_assistive_devices', 'needs_attendant'].map((field) => (
-                  <label key={field} className="flex items-center gap-3 text-sm text-gray-300 cursor-pointer">
-                    <input type="checkbox" checked={formData[field]} onChange={(e) => handleChange(field, e.target.checked)}
-                      className="w-5 h-5 rounded-lg bg-white/[0.04] border border-white/[0.08] checked:bg-cyan-500/30 checked:border-cyan-500/50 accent-cyan-400" />
-                    {field === 'is_permanent' ? 'هل الإعاقة دائمة؟' : field === 'uses_wheelchair' ? 'هل يستخدم كرسياً متحركاً؟' : field === 'uses_assistive_devices' ? 'هل يستخدم أجهزة مساعدة؟' : 'هل يحتاج مرافق؟'}
-                  </label>
-                ))}
+              <div>
+                <label className="block text-sm text-gray-400 font-medium mb-2">هل الإعاقة دائمة؟</label>
+                <SegmentedControl options={YES_NO_OPTIONS} value={formData.is_permanent} onChange={(v) => handleChange('is_permanent', v)} />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 font-medium mb-2">يستخدم كرسياً متحركاً؟</label>
+                <SegmentedControl options={YES_NO_OPTIONS} value={formData.uses_wheelchair} onChange={(v) => handleChange('uses_wheelchair', v)} />
               </div>
             </div>
           </div>
         </GlassCard>
 
-        {/* Health Status */}
+        {/* 3. Health Status */}
         <GlassCard className="mb-6">
           <div className="px-6 sm:px-10 py-6 sm:py-8">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 border border-cyan-500/30 flex items-center justify-center"><Shield className="w-4 h-4 text-cyan-400" /></div>
-              <h2 className="text-xl font-bold text-white">الحالة الصحية</h2>
+              <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 border border-cyan-500/30"><Shield className="w-4 h-4 text-cyan-400" /></div>
+              <h2 className="text-xl font-bold text-white">ثالثاً: الحالة الصحية</h2>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <GlassTextarea label="الأمراض المزمنة" icon={FileText} value={formData.chronic_diseases} onChange={(e) => handleChange('chronic_diseases', e.target.value)} placeholder="الأمراض المزمنة" />
               <GlassTextarea label="الأدوية المستخدمة" icon={FileText} value={formData.medications} onChange={(e) => handleChange('medications', e.target.value)} placeholder="الأدوية المستخدمة" />
-              <GlassTextarea label="الحالة النفسية" icon={FileText} value={formData.mental_health} onChange={(e) => handleChange('mental_health', e.target.value)} placeholder="الحالة النفسية" />
-              <div className="space-y-4">
-                <GlassInput label="القدرة على الحركة" icon={Users}>
-                  <select value={formData.mobility} onChange={(e) => handleChange('mobility', e.target.value)}
-                    className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-gray-300 outline-none transition-all appearance-none cursor-pointer focus:border-cyan-500/50 focus:bg-white/[0.06]">
-                    <option value="" className="bg-[#0B0F19]">اختر</option>
-                    {MOBILITY_OPTIONS.map(o => <option key={o} value={o} className="bg-[#0B0F19]">{o}</option>)}
-                  </select>
-                </GlassInput>
-                <GlassInput label="القدرة على التواصل" icon={Users}>
-                  <select value={formData.communication} onChange={(e) => handleChange('communication', e.target.value)}
-                    className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-gray-300 outline-none transition-all appearance-none cursor-pointer focus:border-cyan-500/50 focus:bg-white/[0.06]">
-                    <option value="" className="bg-[#0B0F19]">اختر</option>
-                    {COMMUNICATION_OPTIONS.map(o => <option key={o} value={o} className="bg-[#0B0F19]">{o}</option>)}
-                  </select>
-                </GlassInput>
-                <GlassInput label="الاعتماد على النفس" icon={Users}>
-                  <select value={formData.self_reliance} onChange={(e) => handleChange('self_reliance', e.target.value)}
-                    className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-gray-300 outline-none transition-all appearance-none cursor-pointer focus:border-cyan-500/50 focus:bg-white/[0.06]">
-                    <option value="" className="bg-[#0B0F19]">اختر</option>
-                    {SELF_RELIANCE_OPTIONS.map(o => <option key={o} value={o} className="bg-[#0B0F19]">{o}</option>)}
-                  </select>
-                </GlassInput>
-              </div>
+              <GlassInput label="القدرة على الحركة" icon={Users}>
+                <select value={formData.mobility} onChange={(e) => handleChange('mobility', e.target.value)}
+                  className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-gray-300 outline-none transition-all appearance-none cursor-pointer focus:border-cyan-500/50 focus:bg-white/[0.06]">
+                  <option value="" className="bg-[#0B0F19]">اختر</option>
+                  {MOBILITY_OPTIONS.map(o => <option key={o} value={o} className="bg-[#0B0F19]">{o}</option>)}
+                </select>
+              </GlassInput>
+              <GlassTextarea label="ملاحظات صحية" icon={FileText} value={formData.health_notes} onChange={(e) => handleChange('health_notes', e.target.value)} placeholder="ملاحظات صحية..." />
             </div>
           </div>
         </GlassCard>
 
-        {/* Education */}
+        {/* 4. Education */}
         <GlassCard className="mb-6">
           <div className="px-6 sm:px-10 py-6 sm:py-8">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 border border-cyan-500/30 flex items-center justify-center"><Star className="w-4 h-4 text-cyan-400" /></div>
-              <h2 className="text-xl font-bold text-white">الحالة التعليمية</h2>
+              <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 border border-cyan-500/30"><Star className="w-4 h-4 text-cyan-400" /></div>
+              <h2 className="text-xl font-bold text-white">رابعاً: الحالة التعليمية</h2>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              <GlassInput label="المستوى الدراسي" icon={Star}>
+              <GlassInput label="المستوى التعليمي" icon={Star}>
                 <select value={formData.education_level} onChange={(e) => handleChange('education_level', e.target.value)}
                   className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-gray-300 outline-none transition-all appearance-none cursor-pointer focus:border-cyan-500/50 focus:bg-white/[0.06]">
                   <option value="" className="bg-[#0B0F19]">اختر</option>
                   {EDUCATION_LEVELS.map(l => <option key={l} value={l} className="bg-[#0B0F19]">{l}</option>)}
                 </select>
               </GlassInput>
-              <GlassInput label="آخر مؤهل" icon={FileText} value={formData.last_qualification} onChange={(e) => handleChange('last_qualification', e.target.value)} placeholder="آخر مؤهل" />
-              <div className="space-y-3 pt-6">
-                <label className="flex items-center gap-3 text-sm text-gray-300 cursor-pointer">
-                  <input type="checkbox" checked={formData.is_studying} onChange={(e) => handleChange('is_studying', e.target.checked)}
-                    className="w-5 h-5 rounded-lg bg-white/[0.04] border border-white/[0.08] checked:bg-cyan-500/30 checked:border-cyan-500/50 accent-cyan-400" />
-                  هل يدرس حالياً؟
-                </label>
-                <label className="flex items-center gap-3 text-sm text-gray-300 cursor-pointer">
-                  <input type="checkbox" checked={formData.needs_educational_support} onChange={(e) => handleChange('needs_educational_support', e.target.checked)}
-                    className="w-5 h-5 rounded-lg bg-white/[0.04] border border-white/[0.08] checked:bg-cyan-500/30 checked:border-cyan-500/50 accent-cyan-400" />
-                  يحتاج دعماً تعليمياً؟
-                </label>
+              <div>
+                <label className="block text-sm text-gray-400 font-medium mb-2">هل يدرس حالياً؟</label>
+                <SegmentedControl options={YES_NO_OPTIONS} value={formData.is_studying} onChange={(v) => handleChange('is_studying', v)} />
               </div>
+              <GlassInput label="آخر مؤهل دراسي" icon={FileText} value={formData.last_qualification} onChange={(e) => handleChange('last_qualification', e.target.value)} placeholder="آخر مؤهل دراسي" />
             </div>
           </div>
         </GlassCard>
 
-        {/* Employment */}
+        {/* 5. Employment */}
         <GlassCard className="mb-6">
           <div className="px-6 sm:px-10 py-6 sm:py-8">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 border border-cyan-500/30 flex items-center justify-center"><Building2 className="w-4 h-4 text-cyan-400" /></div>
-              <h2 className="text-xl font-bold text-white">الحالة الوظيفية</h2>
+              <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 border border-cyan-500/30"><Building2 className="w-4 h-4 text-cyan-400" /></div>
+              <h2 className="text-xl font-bold text-white">خامساً: الحالة الوظيفية</h2>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               <GlassInput label="الحالة الوظيفية" icon={Users}>
@@ -1268,52 +1314,45 @@ export default function App() {
                 </select>
               </GlassInput>
               {formData.employment_status === 'يعمل' && (<>
-                <GlassInput label="جهة العمل" icon={Building2} value={formData.employer} onChange={(e) => handleChange('employer', e.target.value)} placeholder="جهة العمل" />
+                <GlassInput label="جهة العمل (إن وجدت)" icon={Building2} value={formData.employer} onChange={(e) => handleChange('employer', e.target.value)} placeholder="جهة العمل" />
                 <GlassInput label="المهنة" icon={ListChecks} value={formData.occupation} onChange={(e) => handleChange('occupation', e.target.value)} placeholder="المهنة" />
-                <GlassInput label="الدخل الشهري" icon={ListChecks} value={formData.monthly_income} onChange={(e) => handleChange('monthly_income', e.target.value)} placeholder="الدخل الشهري" />
+                <GlassInput label="الدخل الشهري (إن وجد)" icon={ListChecks} value={formData.monthly_income} onChange={(e) => handleChange('monthly_income', e.target.value)} placeholder="الدخل الشهري" />
               </>)}
             </div>
           </div>
         </GlassCard>
 
-        {/* Economic Status */}
+        {/* 6. Economic Status */}
         <GlassCard className="mb-6">
           <div className="px-6 sm:px-10 py-6 sm:py-8">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 border border-cyan-500/30 flex items-center justify-center"><Database className="w-4 h-4 text-cyan-400" /></div>
-              <h2 className="text-xl font-bold text-white">الحالة الاقتصادية</h2>
+              <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 border border-cyan-500/30"><Database className="w-4 h-4 text-cyan-400" /></div>
+              <h2 className="text-xl font-bold text-white">سادساً: الحالة الاقتصادية</h2>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               <GlassInput label="دخل الأسرة" icon={ListChecks} value={formData.family_income} onChange={(e) => handleChange('family_income', e.target.value)} placeholder="دخل الأسرة" />
               <GlassInput label="مصدر الدخل" icon={ListChecks} value={formData.income_source} onChange={(e) => handleChange('income_source', e.target.value)} placeholder="مصدر الدخل" />
-              <div className="space-y-3 pt-6">
-                <label className="flex items-center gap-3 text-sm text-gray-300 cursor-pointer">
-                  <input type="checkbox" checked={formData.has_debts} onChange={(e) => handleChange('has_debts', e.target.checked)}
-                    className="w-5 h-5 rounded-lg bg-white/[0.04] border border-white/[0.08] checked:bg-cyan-500/30 checked:border-cyan-500/50 accent-cyan-400" /> يوجد ديون؟
-                </label>
-                {formData.has_debts && (
-                  <GlassInput label="المبلغ" icon={ListChecks} value={formData.debt_amount} onChange={(e) => handleChange('debt_amount', e.target.value)} placeholder="المبلغ" />
-                )}
+              <div>
+                <label className="block text-sm text-gray-400 font-medium mb-2">هل يستفيد من إعانات؟</label>
+                <SegmentedControl options={YES_NO_OPTIONS} value={formData.receives_benefits} onChange={(v) => handleChange('receives_benefits', v)} />
               </div>
-              <div className="space-y-3 pt-6">
-                <label className="flex items-center gap-3 text-sm text-gray-300 cursor-pointer">
-                  <input type="checkbox" checked={formData.receives_benefits} onChange={(e) => handleChange('receives_benefits', e.target.checked)}
-                    className="w-5 h-5 rounded-lg bg-white/[0.04] border border-white/[0.08] checked:bg-cyan-500/30 checked:border-cyan-500/50 accent-cyan-400" /> يستفيد من إعانات؟
-                </label>
-                {formData.receives_benefits && (
-                  <GlassInput label="نوع الإعانة" icon={ListChecks} value={formData.benefit_type} onChange={(e) => handleChange('benefit_type', e.target.value)} placeholder="نوع الإعانة" />
-                )}
+              {formData.receives_benefits === 'نعم' && (
+                <GlassInput label="نوع الإعانة" icon={ListChecks} value={formData.benefit_type} onChange={(e) => handleChange('benefit_type', e.target.value)} placeholder="نوع الإعانة" />
+              )}
+              <div>
+                <label className="block text-sm text-gray-400 font-medium mb-2">هل توجد ديون؟</label>
+                <SegmentedControl options={YES_NO_OPTIONS} value={formData.has_debts} onChange={(v) => handleChange('has_debts', v)} />
               </div>
             </div>
           </div>
         </GlassCard>
 
-        {/* Needs */}
+        {/* 7. Needs */}
         <GlassCard className="mb-6">
           <div className="px-6 sm:px-10 py-6 sm:py-8">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 border border-cyan-500/30 flex items-center justify-center"><ListChecks className="w-4 h-4 text-cyan-400" /></div>
-              <h2 className="text-xl font-bold text-white">الاحتياجات</h2>
+              <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 border border-cyan-500/30"><ListChecks className="w-4 h-4 text-cyan-400" /></div>
+              <h2 className="text-xl font-bold text-white">سابعاً: الاحتياجات</h2>
             </div>
             <div className="flex flex-wrap gap-3 mb-4">
               {NEED_OPTIONS.map((need) => (
@@ -1329,12 +1368,12 @@ export default function App() {
           </div>
         </GlassCard>
 
-        {/* Social Evaluation */}
+        {/* 8. Social Evaluation */}
         <GlassCard className="mb-6">
           <div className="px-6 sm:px-10 py-6 sm:py-8">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 border border-cyan-500/30 flex items-center justify-center"><ClipboardCheck className="w-4 h-4 text-cyan-400" /></div>
-              <h2 className="text-xl font-bold text-white">التقييم الاجتماعي</h2>
+              <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 border border-cyan-500/30"><ClipboardCheck className="w-4 h-4 text-cyan-400" /></div>
+              <h2 className="text-xl font-bold text-white">ثامناً: التقييم الاجتماعي</h2>
             </div>
             <div className="mb-6">
               <label className="block text-sm text-gray-400 font-medium mb-3">مستوى الحاجة</label>
@@ -1342,10 +1381,22 @@ export default function App() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <GlassTextarea label="وصف الحالة" icon={FileText} value={formData.case_description} onChange={(e) => handleChange('case_description', e.target.value)} placeholder="وصف الحالة" />
-              <GlassTextarea label="ملاحظات الباحث" icon={FileText} value={formData.researcher_notes} onChange={(e) => handleChange('researcher_notes', e.target.value)} placeholder="ملاحظات الباحث" />
-              <GlassTextarea label="التوصيات" icon={Lightbulb} value={formData.recommendations} onChange={(e) => handleChange('recommendations', e.target.value)} placeholder="التوصيات" />
               <GlassTextarea label="الخدمات المقترحة" icon={Star} value={formData.proposed_services} onChange={(e) => handleChange('proposed_services', e.target.value)} placeholder="الخدمات المقترحة" />
+              <div className="sm:col-span-2">
+                <GlassTextarea label="التوصيات" icon={Lightbulb} value={formData.recommendations} onChange={(e) => handleChange('recommendations', e.target.value)} placeholder="التوصيات" />
+              </div>
             </div>
+          </div>
+        </GlassCard>
+
+        {/* 9. General Notes */}
+        <GlassCard className="mb-6">
+          <div className="px-6 sm:px-10 py-6 sm:py-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 border border-cyan-500/30"><FileText className="w-4 h-4 text-cyan-400" /></div>
+              <h2 className="text-xl font-bold text-white">تاسعاً: الملاحظات العامة</h2>
+            </div>
+            <GlassTextarea label="الملاحظات العامة" icon={FileText} value={formData.general_notes} onChange={(e) => handleChange('general_notes', e.target.value)} placeholder="أكتب الملاحظات العامة هنا..." />
           </div>
         </GlassCard>
 
@@ -1552,21 +1603,31 @@ export default function App() {
                 <div className="space-y-5">
                   <div className="grid grid-cols-2 gap-4">
                     <div><span className="text-xs text-gray-500 block">الاسم الرباعي</span><span className="text-white font-medium">{viewReport.full_name || '—'}</span></div>
-                    <div><span className="text-xs text-gray-500 block">رقم الهوية</span><span className="text-white font-medium">{viewReport.id_number || '—'}</span></div>
                     <div><span className="text-xs text-gray-500 block">الجنس</span><span className="text-white font-medium">{viewReport.gender || '—'}</span></div>
                     <div><span className="text-xs text-gray-500 block">العمر</span><span className="text-white font-medium">{viewReport.age || '—'}</span></div>
+                    <div><span className="text-xs text-gray-500 block">تاريخ الميلاد</span><span className="text-white font-medium">{viewReport.birth_date || '—'}</span></div>
+                    <div><span className="text-xs text-gray-500 block">رقم الهاتف</span><span className="text-white font-medium">{viewReport.phone || '—'}</span></div>
+                    <div><span className="text-xs text-gray-500 block">الحالة الاجتماعية</span><span className="text-white font-medium">{viewReport.marital_status || '—'}</span></div>
+                    <div><span className="text-xs text-gray-500 block">منطقة السكن</span><span className="text-white font-medium">{viewReport.residence_area || '—'}</span></div>
                     <div><span className="text-xs text-gray-500 block">نوع الإعاقة</span><span className="text-white font-medium">{viewReport.disability_type || '—'}</span></div>
+                    <div><span className="text-xs text-gray-500 block">درجة الإعاقة</span><span className="text-white font-medium">{viewReport.disability_degree || '—'}</span></div>
                     <div><span className="text-xs text-gray-500 block">مستوى الحاجة</span><span className="text-white font-medium">{viewReport.need_level || '—'}</span></div>
-                    <div className="col-span-2"><span className="text-xs text-gray-500 block">نوع السكن</span><span className="text-white font-medium">{viewReport.housing_type || '—'}</span></div>
+                    <div><span className="text-xs text-gray-500 block">الحالة الوظيفية</span><span className="text-white font-medium">{viewReport.employment_status || '—'}</span></div>
+                    <div><span className="text-xs text-gray-500 block">المستوى التعليمي</span><span className="text-white font-medium">{viewReport.education_level || '—'}</span></div>
+                    <div><span className="text-xs text-gray-500 block">إعاقة دائمة؟</span><span className="text-white font-medium">{viewReport.is_permanent === 'نعم' ? 'نعم' : 'لا'}</span></div>
+                    <div><span className="text-xs text-gray-500 block">كرسي متحرك؟</span><span className="text-white font-medium">{viewReport.uses_wheelchair === 'نعم' ? 'نعم' : 'لا'}</span></div>
                   </div>
                   {viewReport.case_description && (
                     <div><span className="text-xs text-gray-500 block mb-1">وصف الحالة</span><p className="text-white/80 text-sm bg-white/[0.02] rounded-xl p-3 border border-white/[0.04]">{viewReport.case_description}</p></div>
                   )}
-                  {viewReport.researcher_notes && (
-                    <div><span className="text-xs text-gray-500 block mb-1">ملاحظات الباحث</span><p className="text-white/80 text-sm bg-white/[0.02] rounded-xl p-3 border border-white/[0.04]">{viewReport.researcher_notes}</p></div>
+                  {viewReport.proposed_services && (
+                    <div><span className="text-xs text-gray-500 block mb-1">الخدمات المقترحة</span><p className="text-white/80 text-sm bg-white/[0.02] rounded-xl p-3 border border-white/[0.04]">{viewReport.proposed_services}</p></div>
                   )}
                   {viewReport.recommendations && (
                     <div><span className="text-xs text-gray-500 block mb-1">التوصيات</span><p className="text-white/80 text-sm bg-white/[0.02] rounded-xl p-3 border border-white/[0.04]">{viewReport.recommendations}</p></div>
+                  )}
+                  {viewReport.general_notes && (
+                    <div><span className="text-xs text-gray-500 block mb-1">الملاحظات العامة</span><p className="text-white/80 text-sm bg-white/[0.02] rounded-xl p-3 border border-white/[0.04]">{viewReport.general_notes}</p></div>
                   )}
                   {viewReport.needs?.length > 0 && (
                     <div><span className="text-xs text-gray-500 block mb-1">الاحتياجات</span><div className="flex flex-wrap gap-2">{viewReport.needs.map((n, i) => <span key={i} className="text-xs text-cyan-400 bg-cyan-500/10 px-2 py-1 rounded-lg">{n}</span>)}</div></div>
