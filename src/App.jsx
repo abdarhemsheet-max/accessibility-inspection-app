@@ -104,6 +104,12 @@ const EVALUATION_ROWS = [
   { id: 'equipment', label: 'التجهيزات والخدمات المساندة', subtitle: '(أماكن الصلاة، مصاحف برايل)' },
 ]
 
+const GENDERS = ['ذكر', 'أنثى']
+const DISABILITY_TYPES = ['حركية', 'بصرية', 'سمعية', 'ذهنية', 'توحد', 'متعددة', 'أخرى']
+const HEALTH_STATUSES = ['جيدة', 'متوسطة', 'سيئة']
+
+const PEOPLE_TABLE_EMPTY_ROW = { name: '', age: '', gender: '', disability_type: '', disability_percentage: '', health_status: '' }
+
 const ITEMS_PER_PAGE = 5
 
 const Toast = ({ message, type, onClose }) => {
@@ -282,8 +288,12 @@ export default function App() {
     negatives: '',
     recommendations: '',
     final_classification: '',
+    interviewees_count: 0,
+    team_members: '',
+    people_table: [{ ...PEOPLE_TABLE_EMPTY_ROW }],
   })
 
+  const [activeTab, setActiveTab] = useState('page1')
   const pdfTemplateRef = useRef(null)
   const [reports, setReports] = useState([])
   const [loading, setLoading] = useState(false)
@@ -343,6 +353,28 @@ export default function App() {
     }))
   }
 
+  const handlePeopleTableChange = (index, field, value) => {
+    setFormData(prev => {
+      const updated = [...prev.people_table]
+      updated[index] = { ...updated[index], [field]: value }
+      return { ...prev, people_table: updated }
+    })
+  }
+
+  const addPeopleRow = () => {
+    setFormData(prev => ({
+      ...prev,
+      people_table: [...prev.people_table, { ...PEOPLE_TABLE_EMPTY_ROW }],
+    }))
+  }
+
+  const removePeopleRow = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      people_table: prev.people_table.filter((_, i) => i !== index),
+    }))
+  }
+
   const resetForm = () => {
     setFormData({
       visit_date: '',
@@ -358,6 +390,9 @@ export default function App() {
       negatives: '',
       recommendations: '',
       final_classification: '',
+      interviewees_count: 0,
+      team_members: '',
+      people_table: [{ ...PEOPLE_TABLE_EMPTY_ROW }],
     })
     setEditId(null)
   }
@@ -388,6 +423,9 @@ export default function App() {
         negatives: formData.negatives,
         recommendations: formData.recommendations,
         final_classification: formData.final_classification,
+        interviewees_count: formData.interviewees_count,
+        team_members: formData.team_members,
+        people_table: formData.people_table,
       }
 
       const sb = getSupabase()
@@ -433,6 +471,9 @@ export default function App() {
       negatives: report.negatives || '',
       recommendations: report.recommendations || '',
       final_classification: report.final_classification || '',
+      interviewees_count: report.interviewees_count || 0,
+      team_members: report.team_members || '',
+      people_table: report.people_table?.length ? report.people_table : [{ ...PEOPLE_TABLE_EMPTY_ROW }],
     })
     setEditId(report.id)
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -570,7 +611,7 @@ export default function App() {
         </div>
         <div style="border:1px solid #d1d5db;">
           <div style="background:#f3f4f6;padding:8px 12px;border-bottom:1px solid #d1d5db;font-weight:700;color:#1f2937;">التوصيات والاحتياجات الفعلية</div>
-          <div style="padding:10px 12px;font-size:13px;color:#4b5563;min-height:40px;">${contentOrEmpty(formData.recommendations)}</div>
+        <div style="padding:10px 12px;font-size:13px;color:#4b5563;min-height:40px;">${contentOrEmpty(formData.recommendations)}</div>
         </div>
       </div>
     </section>
@@ -581,6 +622,32 @@ export default function App() {
       <h2 style="font-size:16px;font-weight:700;color:#1f2937;margin:0 0 12px;border-right:4px solid #1f2937;padding-right:8px;">رابعاً: التصنيف النهائي</h2>
       <div style="display:inline-block;padding:6px 16px;font-size:14px;font-weight:700;border-radius:4px;border:1px solid;background:${formData.final_classification === 'مهيأ بالكامل' ? '#dcfce7' : formData.final_classification === 'يحتاج تعديلات بسيطة' ? '#fef9c3' : '#fee2e2'};color:${formData.final_classification === 'مهيأ بالكامل' ? '#166534' : formData.final_classification === 'يحتاج تعديلات بسيطة' ? '#854d0e' : '#991b1b'};border-color:${formData.final_classification === 'مهيأ بالكامل' ? '#86efac' : formData.final_classification === 'يحتاج تعديلات بسيطة' ? '#fde047' : '#fca5a5'};">${formData.final_classification}</div>
     </section>` : ''}
+
+    <!-- Section 5: People Data -->
+    <section style="margin-bottom:24px;">
+      <h2 style="font-size:16px;font-weight:700;color:#1f2937;margin:0 0 12px;border-right:4px solid #1f2937;padding-right:8px;">خامساً: بيانات الأشخاص ذوي الإعاقة</h2>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;border:1px solid #d1d5db;padding:14px;background:#f9fafb;margin-bottom:16px;">
+        <div><span style="font-size:11px;color:#6b7280;font-weight:700;display:block;">عدد الأشخاص الذين تمت مقابلتهم</span><span style="font-size:14px;font-weight:700;color:#111827;">${formData.interviewees_count || 0}</span></div>
+        <div><span style="font-size:11px;color:#6b7280;font-weight:700;display:block;">فريق الزيارة</span><span style="font-size:14px;font-weight:700;color:#111827;">${formData.team_members || '—'}</span></div>
+      </div>
+      ${formData.people_table && formData.people_table.length > 0 && formData.people_table[0].name ? `
+      <table style="width:100%;text-align:right;font-size:12px;border-collapse:collapse;">
+        <thead>
+          <tr style="background:#f3f4f6;color:#1f2937;font-weight:700;">
+            <th style="padding:8px;border:1px solid #d1d5db;width:32px;">م</th>
+            <th style="padding:8px;border:1px solid #d1d5db;">الاسم</th>
+            <th style="padding:8px;border:1px solid #d1d5db;width:40px;">العمر</th>
+            <th style="padding:8px;border:1px solid #d1d5db;width:50px;">الجنس</th>
+            <th style="padding:8px;border:1px solid #d1d5db;">نوع الإعاقة</th>
+            <th style="padding:8px;border:1px solid #d1d5db;width:60px;">نسبة الإعاقة</th>
+            <th style="padding:8px;border:1px solid #d1d5db;width:60px;">الحالة الصحية</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${peopleRowsHtml}
+        </tbody>
+      </table>` : '<p style="color:#9ca3af;font-size:13px;">لم يتم تسجيل بيانات الأشخاص.</p>'}
+    </section>
 
     <!-- Signatures -->
     <section style="margin-top:40px;display:flex;justify-content:space-between;text-align:center;">
@@ -663,6 +730,17 @@ export default function App() {
       }
 
       const contentOrEmpty = (val) => val && val.trim() ? val : 'لم تسجل ملاحظات إضافية في هذا البند.'
+
+      const peopleRowsHtml = report.people_table.filter(p => p.name).map((p, i) =>
+        '<tr>' +
+        '<td style="padding:8px;border:1px solid #d1d5db;text-align:center;color:#6b7280;">' + (i + 1) + '</td>' +
+        '<td style="padding:8px;border:1px solid #d1d5db;color:#111827;">' + (p.name || '') + '</td>' +
+        '<td style="padding:8px;border:1px solid #d1d5db;text-align:center;">' + (p.age || '\u2014') + '</td>' +
+        '<td style="padding:8px;border:1px solid #d1d5db;text-align:center;">' + (p.gender || '\u2014') + '</td>' +
+        '<td style="padding:8px;border:1px solid #d1d5db;">' + (p.disability_type || '\u2014') + '</td>' +
+        '<td style="padding:8px;border:1px solid #d1d5db;text-align:center;">' + (p.disability_percentage || '\u2014') + '</td>' +
+        '<td style="padding:8px;border:1px solid #d1d5db;text-align:center;">' + (p.health_status || '\u2014') + '</td>' +
+        '</tr>').join('')
 
       const el = pdfTemplateRef.current
       if (!el) throw new Error('Template ref not found')
@@ -756,6 +834,31 @@ export default function App() {
       <h2 style="font-size:16px;font-weight:700;color:#1f2937;margin:0 0 12px;border-right:4px solid #1f2937;padding-right:8px;">رابعاً: التصنيف النهائي</h2>
       <div style="display:inline-block;padding:6px 16px;font-size:14px;font-weight:700;border-radius:4px;border:1px solid;background:${report.final_classification === 'مهيأ بالكامل' ? '#dcfce7' : report.final_classification === 'يحتاج تعديلات بسيطة' ? '#fef9c3' : '#fee2e2'};color:${report.final_classification === 'مهيأ بالكامل' ? '#166534' : report.final_classification === 'يحتاج تعديلات بسيطة' ? '#854d0e' : '#991b1b'};border-color:${report.final_classification === 'مهيأ بالكامل' ? '#86efac' : report.final_classification === 'يحتاج تعديلات بسيطة' ? '#fde047' : '#fca5a5'};">${report.final_classification}</div>
     </section>` : ''}
+
+    <section style="margin-bottom:24px;">
+      <h2 style="font-size:16px;font-weight:700;color:#1f2937;margin:0 0 12px;border-right:4px solid #1f2937;padding-right:8px;">خامساً: بيانات الأشخاص ذوي الإعاقة</h2>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;border:1px solid #d1d5db;padding:14px;background:#f9fafb;margin-bottom:16px;">
+        <div><span style="font-size:11px;color:#6b7280;font-weight:700;display:block;">عدد الأشخاص الذين تمت مقابلتهم</span><span style="font-size:14px;font-weight:700;color:#111827;">${report.interviewees_count || 0}</span></div>
+        <div><span style="font-size:11px;color:#6b7280;font-weight:700;display:block;">فريق الزيارة</span><span style="font-size:14px;font-weight:700;color:#111827;">${report.team_members || '—'}</span></div>
+      </div>
+      ${report.people_table && report.people_table.length > 0 && report.people_table[0].name ? `
+      <table style="width:100%;text-align:right;font-size:12px;border-collapse:collapse;">
+        <thead>
+          <tr style="background:#f3f4f6;color:#1f2937;font-weight:700;">
+            <th style="padding:8px;border:1px solid #d1d5db;width:32px;">م</th>
+            <th style="padding:8px;border:1px solid #d1d5db;">الاسم</th>
+            <th style="padding:8px;border:1px solid #d1d5db;width:40px;">العمر</th>
+            <th style="padding:8px;border:1px solid #d1d5db;width:50px;">الجنس</th>
+            <th style="padding:8px;border:1px solid #d1d5db;">نوع الإعاقة</th>
+            <th style="padding:8px;border:1px solid #d1d5db;width:60px;">نسبة الإعاقة</th>
+            <th style="padding:8px;border:1px solid #d1d5db;width:60px;">الحالة الصحية</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${peopleRowsHtml}
+        </tbody>
+      </table>` : '<p style="color:#9ca3af;font-size:13px;">لم يتم تسجيل بيانات الأشخاص.</p>'}
+    </section>
 
     <section style="margin-top:40px;display:flex;justify-content:space-between;text-align:center;">
       <div style="width:45%;">
@@ -902,6 +1005,40 @@ export default function App() {
           </div>
         </GlassCard>
 
+        {/* TAB NAVIGATION */}
+        <div className="flex gap-1 mb-6 bg-white/[0.02] border border-white/[0.06] rounded-2xl p-1">
+          <button
+            type="button"
+            onClick={() => setActiveTab('page1')}
+            className={`flex-1 px-5 py-3 rounded-xl text-sm font-medium transition-all duration-300
+              ${activeTab === 'page1'
+                ? 'bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 shadow-lg shadow-cyan-500/5'
+                : 'text-gray-400 hover:text-white hover:bg-white/[0.04] border border-transparent'
+              }`}
+          >
+            <span className="flex items-center justify-center gap-2">
+              <ClipboardCheck className="w-4 h-4" />
+              تقييم المرفق
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('page2')}
+            className={`flex-1 px-5 py-3 rounded-xl text-sm font-medium transition-all duration-300
+              ${activeTab === 'page2'
+                ? 'bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 shadow-lg shadow-cyan-500/5'
+                : 'text-gray-400 hover:text-white hover:bg-white/[0.04] border border-transparent'
+              }`}
+          >
+            <span className="flex items-center justify-center gap-2">
+              <Users className="w-4 h-4" />
+              بيانات المستفيدين
+            </span>
+          </button>
+        </div>
+
+        {activeTab === 'page1' && (
+        <>
         {/* SECTION 1: بيانات الزيارة */}
         <GlassCard className="mb-6">
           <div className="px-6 sm:px-10 py-6 sm:py-8">
@@ -1203,6 +1340,171 @@ export default function App() {
             </div>
           </div>
         </GlassCard>
+        </>
+        )}
+
+        {activeTab === 'page2' && (
+        <>
+        {/* SECTION 6: بيانات الأشخاص ذوي الإعاقة */}
+        <GlassCard className="mb-6">
+          <div className="px-6 sm:px-10 py-6 sm:py-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 
+                border border-cyan-500/30 flex items-center justify-center">
+                <Users className="w-4 h-4 text-cyan-400" />
+              </div>
+              <h2 className="text-xl font-bold text-white">بيانات الأشخاص ذوي الإعاقة المستفيدين</h2>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-8">
+              <GlassInput label="اسم المسجد" icon={Building2}>
+                <input type="text" value={formData.facility_name}
+                  onChange={(e) => handleChange('facility_name', e.target.value)}
+                  className="w-full bg-transparent text-white outline-none text-sm" placeholder="اسم المسجد" />
+              </GlassInput>
+              <GlassInput label="المنطقة" icon={MapPin}>
+                <input type="text" value={formData.region}
+                  onChange={(e) => handleChange('region', e.target.value)}
+                  className="w-full bg-transparent text-white outline-none text-sm" placeholder="المنطقة" />
+              </GlassInput>
+              <GlassInput label="تاريخ الزيارة" icon={Calendar}>
+                <input type="date" value={formData.visit_date}
+                  onChange={(e) => handleChange('visit_date', e.target.value)}
+                  className="w-full bg-transparent text-white outline-none text-sm" />
+              </GlassInput>
+              <Counter label="عدد الأشخاص الذين تمت مقابلتهم" icon={Users}
+                value={formData.interviewees_count}
+                onChange={(v) => handleChange('interviewees_count', Math.max(0, v))} />
+              <GlassInput label="فريق الزيارة" icon={Users}>
+                <input type="text" value={formData.team_members}
+                  onChange={(e) => handleChange('team_members', e.target.value)}
+                  className="w-full bg-transparent text-white outline-none text-sm" placeholder="أسماء فريق الزيارة" />
+              </GlassInput>
+            </div>
+
+            {/* People Table */}
+            <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-5 overflow-x-auto">
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-white font-bold text-sm">جدول بيانات الأشخاص</span>
+                <button type="button" onClick={addPeopleRow}
+                  className="px-4 py-2 rounded-xl bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 
+                    text-xs font-medium hover:bg-cyan-500/30 transition-all flex items-center gap-1">
+                  <Plus className="w-3.5 h-3.5" /> إضافة صف
+                </button>
+              </div>
+              <table className="w-full text-right text-xs min-w-[700px]">
+                <thead>
+                  <tr className="text-gray-400 border-b border-white/[0.06]">
+                    <th className="py-3 px-2 font-medium w-8">م</th>
+                    <th className="py-3 px-2 font-medium">الاسم</th>
+                    <th className="py-3 px-2 font-medium w-16">العمر</th>
+                    <th className="py-3 px-2 font-medium w-20">الجنس</th>
+                    <th className="py-3 px-2 font-medium">نوع الإعاقة</th>
+                    <th className="py-3 px-2 font-medium w-20">نسبة الإعاقة</th>
+                    <th className="py-3 px-2 font-medium">الحالة الصحية</th>
+                    <th className="py-3 px-2 font-medium w-8"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {formData.people_table.map((row, i) => (
+                    <tr key={i} className="border-b border-white/[0.04]">
+                      <td className="py-2 px-2 text-gray-500 text-center">{i + 1}</td>
+                      <td className="py-2 px-2">
+                        <input type="text" value={row.name}
+                          onChange={(e) => handlePeopleTableChange(i, 'name', e.target.value)}
+                          className="w-full bg-transparent text-white outline-none" placeholder="الاسم" />
+                      </td>
+                      <td className="py-2 px-2">
+                        <input type="number" value={row.age}
+                          onChange={(e) => handlePeopleTableChange(i, 'age', e.target.value)}
+                          className="w-full bg-transparent text-white outline-none text-center" placeholder="عمر" />
+                      </td>
+                      <td className="py-2 px-2">
+                        <select value={row.gender}
+                          onChange={(e) => handlePeopleTableChange(i, 'gender', e.target.value)}
+                          className="w-full bg-transparent text-white outline-none text-center cursor-pointer">
+                          <option value="" className="bg-gray-900">—</option>
+                          {GENDERS.map(g => <option key={g} value={g} className="bg-gray-900">{g}</option>)}
+                        </select>
+                      </td>
+                      <td className="py-2 px-2">
+                        <select value={row.disability_type}
+                          onChange={(e) => handlePeopleTableChange(i, 'disability_type', e.target.value)}
+                          className="w-full bg-transparent text-white outline-none cursor-pointer">
+                          <option value="" className="bg-gray-900">—</option>
+                          {DISABILITY_TYPES.map(t => <option key={t} value={t} className="bg-gray-900">{t}</option>)}
+                        </select>
+                      </td>
+                      <td className="py-2 px-2">
+                        <input type="text" value={row.disability_percentage}
+                          onChange={(e) => handlePeopleTableChange(i, 'disability_percentage', e.target.value)}
+                          className="w-full bg-transparent text-white outline-none text-center" placeholder="%" />
+                      </td>
+                      <td className="py-2 px-2">
+                        <select value={row.health_status}
+                          onChange={(e) => handlePeopleTableChange(i, 'health_status', e.target.value)}
+                          className="w-full bg-transparent text-white outline-none cursor-pointer">
+                          <option value="" className="bg-gray-900">—</option>
+                          {HEALTH_STATUSES.map(s => <option key={s} value={s} className="bg-gray-900">{s}</option>)}
+                        </select>
+                      </td>
+                      <td className="py-2 px-2 text-center">
+                        <button type="button" onClick={() => removePeopleRow(i)}
+                          disabled={formData.people_table.length <= 1}
+                          className="text-gray-500 hover:text-red-400 disabled:opacity-20 transition-all">
+                          <TrashIcon className="w-3.5 h-3.5" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </GlassCard>
+
+        {/* SECTION 7: Save actions for page2 */}
+        <GlassCard className="mb-6 sticky bottom-4 z-40">
+          <div className="px-6 sm:px-10 py-5">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                {editId && (
+                  <span className="text-xs text-amber-400/80 bg-amber-500/10 border border-amber-500/20 
+                    rounded-full px-3 py-1">
+                    تعديل التقرير #{editId}
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button type="button" onClick={resetForm}
+                  className="px-6 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] 
+                    text-gray-400 font-medium hover:text-white hover:bg-white/[0.08] 
+                    transition-all duration-300 flex items-center justify-center gap-2">
+                  <Trash2 className="w-4 h-4" />
+                  تفريغ النموذج
+                </button>
+                <button type="button" onClick={exportToPDF} disabled={pdfExporting}
+                  className="px-6 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] 
+                    text-gray-400 font-medium hover:text-amber-400 hover:border-amber-500/30 
+                    hover:bg-amber-500/10 transition-all duration-300 flex items-center justify-center gap-2
+                    disabled:opacity-50 disabled:cursor-not-allowed">
+                  <FileDown className="w-4 h-4" />
+                  {pdfExporting ? 'جاري التصدير...' : 'PDF التقرير كامل'}
+                </button>
+                <button type="button" onClick={handleSubmit} disabled={submitting}
+                  className="px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-600 to-cyan-500 
+                    text-white font-medium hover:from-cyan-500 hover:to-cyan-400 
+                    transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/20
+                    disabled:opacity-50 disabled:cursor-not-allowed">
+                  <Save className="w-4 h-4" />
+                  {submitting ? 'جاري الحفظ...' : editId ? 'تحديث التقرير' : 'حفظ التقرير'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </GlassCard>
+        </>
+        )}
 
         {/* ARCHIVE SECTION */}
         <GlassCard className="mb-6">
@@ -1514,6 +1816,54 @@ export default function App() {
                     </p>
                   </div>
                 )}
+
+                <div className="border-t border-white/[0.06] pt-4 mt-2">
+                  <span className="text-xs text-gray-500 block mb-3 font-medium">بيانات الأشخاص ذوي الإعاقة</span>
+                  <div className="grid grid-cols-2 gap-3 mb-3">
+                    {viewReport.interviewees_count !== undefined && (
+                      <div className="bg-white/[0.02] rounded-xl p-3 border border-white/[0.04]">
+                        <span className="text-xs text-gray-500 block">عدد الذين تمت مقابلتهم</span>
+                        <span className="text-white text-sm font-medium">{viewReport.interviewees_count}</span>
+                      </div>
+                    )}
+                    {viewReport.team_members && (
+                      <div className="bg-white/[0.02] rounded-xl p-3 border border-white/[0.04]">
+                        <span className="text-xs text-gray-500 block">فريق الزيارة</span>
+                        <span className="text-white text-sm font-medium">{viewReport.team_members}</span>
+                      </div>
+                    )}
+                  </div>
+                  {viewReport.people_table?.length > 0 && viewReport.people_table[0].name && (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-right text-xs border-collapse">
+                        <thead>
+                          <tr className="text-gray-400 border-b border-white/[0.06]">
+                            <th className="py-2 px-1 font-medium">م</th>
+                            <th className="py-2 px-1 font-medium">الاسم</th>
+                            <th className="py-2 px-1 font-medium">العمر</th>
+                            <th className="py-2 px-1 font-medium">الجنس</th>
+                            <th className="py-2 px-1 font-medium">الإعاقة</th>
+                            <th className="py-2 px-1 font-medium">النسبة</th>
+                            <th className="py-2 px-1 font-medium">الحالة</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {viewReport.people_table.filter(p => p.name).map((p, i) => (
+                            <tr key={i} className="border-b border-white/[0.04]">
+                              <td className="py-2 px-1 text-gray-500 text-center">{i + 1}</td>
+                              <td className="py-2 px-1 text-white">{p.name}</td>
+                              <td className="py-2 px-1 text-white/70 text-center">{p.age || '—'}</td>
+                              <td className="py-2 px-1 text-white/70">{p.gender || '—'}</td>
+                              <td className="py-2 px-1 text-white/70">{p.disability_type || '—'}</td>
+                              <td className="py-2 px-1 text-white/70 text-center">{p.disability_percentage || '—'}</td>
+                              <td className="py-2 px-1 text-white/70">{p.health_status || '—'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <button
