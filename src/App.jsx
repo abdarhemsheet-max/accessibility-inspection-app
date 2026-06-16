@@ -293,13 +293,14 @@ export default function App() {
   const [submitting, setSubmitting] = useState(false)
   const [pdfExporting, setPdfExporting] = useState(false)
   const [toast, setToast] = useState(null)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [filterType, setFilterType] = useState('الكل')
-  const [currentPage, setCurrentPage] = useState(1)
   const [editId, setEditId] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(null)
   const [viewReport, setViewReport] = useState(null)
   const [archiveLoading, setArchiveLoading] = useState(false)
+  const [mosquePage, setMosquePage] = useState(1)
+  const [disabilityPage, setDisabilityPage] = useState(1)
+  const [mosqueSearch, setMosqueSearch] = useState('')
+  const [disabilitySearch, setDisabilitySearch] = useState('')
 
   const showToast = useCallback((message, type = 'success') => {
     setToast({ message, type })
@@ -311,25 +312,19 @@ export default function App() {
       const sb = getSupabase()
       if (sb) {
         let q = sb.from('field_inspections').select('*').order('created_at', { ascending: false })
-        if (filterType !== 'الكل') q = q.eq('recordType', filterType)
-        if (searchTerm.trim()) {
-          const s = searchTerm.trim()
-          q = q.or(`mosque_name.ilike.%${s}%,full_name.ilike.%${s}%`)
-        }
         const { data, error } = await q
         if (error) throw error
         setReports(data || [])
       } else {
-        setReports(localDb.query({ search: searchTerm, type: filterType }))
+        setReports(localDb.getAll().sort((a, b) => new Date(b.created_at) - new Date(a.created_at)))
       }
-      setCurrentPage(1)
     } catch (err) {
       console.error('Error fetching reports:', err)
       showToast('فشل في تحميل التقارير', 'error')
     } finally {
       setArchiveLoading(false)
     }
-  }, [searchTerm, filterType, showToast])
+  }, [showToast])
 
   useEffect(() => {
     fetchReports()
@@ -407,15 +402,22 @@ export default function App() {
       const f = activeTab === 'tab1' ? mosqueForm : disabilityForm
       const payload = { ...f }
       const sb = getSupabase()
+      let saved = false
       if (sb) {
-        if (editId) {
-          const { error: updateError } = await sb.from('field_inspections').update(payload).eq('id', editId)
-          if (updateError) throw updateError
-        } else {
-          const { error: insertError } = await sb.from('field_inspections').insert([payload])
-          if (insertError) throw insertError
+        try {
+          if (editId) {
+            const { error: updateError } = await sb.from('field_inspections').update(payload).eq('id', editId)
+            if (updateError) throw updateError
+          } else {
+            const { error: insertError } = await sb.from('field_inspections').insert([payload])
+            if (insertError) throw insertError
+          }
+          saved = true
+        } catch (e) {
+          console.warn('Supabase failed, falling back to localStorage:', e)
         }
-      } else {
+      }
+      if (!saved) {
         if (editId) localDb.update(editId, payload)
         else localDb.insert(payload)
       }
@@ -880,18 +882,111 @@ ${c(report.general_notes)}
     } catch { return dateStr }
   }
 
-  const filteredReports = reports
-  const totalPages = Math.max(1, Math.ceil(filteredReports.length / ITEMS_PER_PAGE))
-  const paginatedReports = filteredReports.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  )
-
   const getReportName = (report) => report.mosque_name || report.facility_name || report.full_name || '\u2014'
-  const getReportTypeBadge = (report) => {
-    if (report.recordType === 'mosque') return { label: 'مسجد', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' }
-    if (report.recordType === 'disability') return { label: 'حالة إعاقة', color: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/30' }
-    return { label: report.facility_type || 'تقرير', color: 'text-gray-400 bg-white/[0.04] border-white/[0.06]' }
+
+  const renderArchive = (type) => {
+    const isMosque = type === 'mosque'
+    const title = isMosque ? 'أرشيف تقييم المساجد' : 'أرشيف حالات ذوي الإعاقة'
+    const search = isMosque ? mosqueSearch : disabilitySearch
+    const setSearch = isMosque ? setMosqueSearch : setDisabilitySearch
+    const page = isMosque ? mosquePage : disabilityPage
+    const setPage = isMosque ? setMosquePage : setDisabilityPage
+
+    const filtered = reports.filter(r => {
+      if (r.recordType !== type) return false
+      if (!search.trim()) return true
+      const s = search.trim().toLowerCase()
+      const name = (r.mosque_name || r.full_name || '').toLowerCase()
+      return name.includes(s)
+    })
+    const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE))
+    const paginated = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE)
+
+    return (
+      <GlassCard className="mb-6">
+        <div className="px-6 sm:px-10 py-6 sm:py-8">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 border border-cyan-500/30 flex items-center justify-center"><Archive className="w-4 h-4 text-cyan-400" /></div>
+            <h2 className="text-xl font-bold text-white">{title}</h2>
+          </div>
+
+          <div className="relative mb-4">
+            <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+            <input type="text" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1) }}
+              placeholder={isMosque ? 'البحث باسم المسجد...' : 'البحث باسم الحالة...'}
+              className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl pr-11 pl-4 py-3 text-white placeholder-gray-500 outline-none transition-all duration-300 focus:border-cyan-500/50 focus:bg-white/[0.06]" />
+          </div>
+
+          {archiveLoading ? (
+            <div className="text-center py-8">
+              <div className="w-8 h-8 border-2 border-cyan-500/30 border-t-cyan-400 rounded-full animate-spin mx-auto mb-4" />
+              <p className="text-gray-500">جاري تحميل التقارير...</p>
+            </div>
+          ) : paginated.length === 0 ? (
+            <div className="text-center py-8">
+              <FileText className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+              <p className="text-gray-500 font-medium">لا توجد تقارير بعد</p>
+            </div>
+          ) : (
+            <>
+              <div className="space-y-3">
+                {paginated.map((report) => (
+                  <div key={report.id}
+                    className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-4 hover:bg-white/[0.04] hover:border-white/[0.1] transition-all duration-300">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-white font-bold text-sm truncate">{getReportName(report)}</h3>
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500 mt-1">
+                          <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{formatDate(report.visit_date || report.created_at)}</span>
+                          {report.region && (<span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{report.region}</span>)}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button type="button" onClick={() => setViewReport(report)}
+                          className="w-8 h-8 rounded-lg bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-gray-400 hover:text-cyan-400 hover:border-cyan-500/30 hover:bg-cyan-500/10 transition-all">
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button type="button" onClick={() => handleEdit(report)}
+                          className="w-8 h-8 rounded-lg bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-gray-400 hover:text-amber-400 hover:border-amber-500/30 hover:bg-amber-500/10 transition-all">
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button type="button" onClick={() => exportFromArchive(report)} disabled={pdfExporting} title="تصدير PDF"
+                          className="w-8 h-8 rounded-lg bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-gray-400 hover:text-rose-400 hover:border-rose-500/30 hover:bg-rose-500/10 transition-all disabled:opacity-30">
+                          <FileDown className="w-4 h-4" />
+                        </button>
+                        <button type="button" onClick={() => setConfirmDelete(report.id)}
+                          className="w-8 h-8 rounded-lg bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-gray-400 hover:text-red-400 hover:border-red-500/30 hover:bg-red-500/10 transition-all">
+                          <TrashIcon className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-2 mt-4">
+                  <button type="button" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+                    className="w-8 h-8 rounded-lg bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-gray-400 disabled:opacity-30 hover:text-white hover:bg-white/[0.06] transition-all">
+                    <ChevronRight className="w-3 h-3" />
+                  </button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                    <button key={p} type="button" onClick={() => setPage(p)}
+                      className={`w-8 h-8 rounded-lg text-xs font-medium transition-all
+                        ${page === p ? 'bg-cyan-500/20 border border-cyan-500/40 text-cyan-300' : 'bg-white/[0.03] border border-white/[0.06] text-gray-400 hover:text-white'
+                      }`}>{p}</button>
+                  ))}
+                  <button type="button" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+                    className="w-8 h-8 rounded-lg bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-gray-400 disabled:opacity-30 hover:text-white hover:bg-white/[0.06] transition-all">
+                    <ChevronLeft className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </GlassCard>
+    )
   }
 
   return (
@@ -1059,6 +1154,7 @@ ${c(report.general_notes)}
             </div>
           </div>
         </GlassCard>
+        {renderArchive('mosque')}
         </>)}
 
         {/* ============ TAB 2: DISABILITY ============ */}
@@ -1206,114 +1302,10 @@ ${c(report.general_notes)}
             </div>
           </div>
         </GlassCard>
+        {renderArchive('disability')}
         </>)}
 
-        {/* ============ ARCHIVE SECTION ============ */}
-        <GlassCard className="mb-6">
-          <div className="px-6 sm:px-10 py-6 sm:py-8">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 border border-cyan-500/30 flex items-center justify-center"><Archive className="w-4 h-4 text-cyan-400" /></div>
-              <h2 className="text-xl font-bold text-white">أرشيف التقارير</h2>
-            </div>
 
-            <div className="flex flex-col sm:flex-row gap-4 mb-6">
-              <div className="relative flex-1">
-                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                <input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="البحث باسم المسجد أو اسم الحالة..."
-                  className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl pr-11 pl-4 py-3 text-white placeholder-gray-500 outline-none transition-all duration-300 focus:border-cyan-500/50 focus:bg-white/[0.06]" />
-              </div>
-              <div className="flex gap-2 flex-wrap">
-                {['الكل', 'mosque', 'disability'].map((type) => (
-                  <button key={type} type="button" onClick={() => setFilterType(type)}
-                    className={`px-4 py-2 rounded-xl text-xs font-medium transition-all duration-200 border
-                      ${filterType === type
-                        ? 'bg-cyan-500/20 border-cyan-500/40 text-cyan-300'
-                        : 'bg-white/[0.03] border-white/[0.06] text-gray-400 hover:text-white hover:bg-white/[0.06]'
-                      }`}>
-                    {type === 'الكل' ? 'الكل' : type === 'mosque' ? 'مسجد' : 'حالة إعاقة'}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {archiveLoading ? (
-              <div className="text-center py-12">
-                <div className="w-8 h-8 border-2 border-cyan-500/30 border-t-cyan-400 rounded-full animate-spin mx-auto mb-4" />
-                <p className="text-gray-500">جاري تحميل التقارير...</p>
-              </div>
-            ) : paginatedReports.length === 0 ? (
-              <div className="text-center py-12">
-                <FileText className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-                <p className="text-gray-500 text-lg font-medium">لا توجد تقارير بعد</p>
-                <p className="text-gray-600 text-sm mt-2">قم بإضافة تقرير جديد للبدء</p>
-              </div>
-            ) : (
-              <>
-                <div className="space-y-4">
-                  {paginatedReports.map((report) => {
-                    const badge = getReportTypeBadge(report)
-                    return (
-                      <div key={report.id}
-                        className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-5 hover:bg-white/[0.04] hover:border-white/[0.1] transition-all duration-300">
-                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-3 mb-2">
-                              <h3 className="text-white font-bold text-base truncate">{getReportName(report)}</h3>
-                              <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${badge.color}`}>{badge.label}</span>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500">
-                              <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{formatDate(report.visit_date || report.created_at)}</span>
-                              {report.region && (<span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{report.region}</span>)}
-                              <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{report.created_at ? new Date(report.created_at).toLocaleDateString('ar-SA') : '—'}</span>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 shrink-0">
-                            <button type="button" onClick={() => setViewReport(report)}
-                              className="w-9 h-9 rounded-lg bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-gray-400 hover:text-cyan-400 hover:border-cyan-500/30 hover:bg-cyan-500/10 transition-all">
-                              <Eye className="w-4 h-4" />
-                            </button>
-                            <button type="button" onClick={() => handleEdit(report)}
-                              className="w-9 h-9 rounded-lg bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-gray-400 hover:text-amber-400 hover:border-amber-500/30 hover:bg-amber-500/10 transition-all">
-                              <Pencil className="w-4 h-4" />
-                            </button>
-                            <button type="button" onClick={() => exportFromArchive(report)} disabled={pdfExporting} title="تصدير PDF"
-                              className="w-9 h-9 rounded-lg bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-gray-400 hover:text-rose-400 hover:border-rose-500/30 hover:bg-rose-500/10 transition-all disabled:opacity-30">
-                              <FileDown className="w-4 h-4" />
-                            </button>
-                            <button type="button" onClick={() => setConfirmDelete(report.id)}
-                              className="w-9 h-9 rounded-lg bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-gray-400 hover:text-red-400 hover:border-red-500/30 hover:bg-red-500/10 transition-all">
-                              <TrashIcon className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-
-                {totalPages > 1 && (
-                  <div className="flex items-center justify-center gap-3 mt-6">
-                    <button type="button" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}
-                      className="w-9 h-9 rounded-lg bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-gray-400 disabled:opacity-30 hover:text-white hover:bg-white/[0.06] transition-all">
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                      <button key={page} type="button" onClick={() => setCurrentPage(page)}
-                        className={`w-9 h-9 rounded-lg text-sm font-medium transition-all
-                          ${currentPage === page ? 'bg-cyan-500/20 border border-cyan-500/40 text-cyan-300' : 'bg-white/[0.03] border border-white/[0.06] text-gray-400 hover:text-white'
-                        }`}>{page}</button>
-                    ))}
-                    <button type="button" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}
-                      className="w-9 h-9 rounded-lg bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-gray-400 disabled:opacity-30 hover:text-white hover:bg-white/[0.06] transition-all">
-                      <ChevronLeft className="w-4 h-4" />
-                    </button>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        </GlassCard>
       </div>
 
       {/* Toast */}
