@@ -310,14 +310,18 @@ export default function App() {
     setArchiveLoading(true)
     try {
       const sb = getSupabase()
+      let data = null
       if (sb) {
-        let q = sb.from('field_inspections').select('*').order('created_at', { ascending: false })
-        const { data, error } = await q
-        if (error) throw error
-        setReports(data || [])
-      } else {
-        setReports(localDb.getAll().sort((a, b) => new Date(b.created_at) - new Date(a.created_at)))
+        try {
+          const q = sb.from('field_inspections').select('*').order('created_at', { ascending: false })
+          const res = await q
+          if (res.error) throw res.error
+          data = res.data
+        } catch (e) {
+          console.warn('Supabase fetch failed, reading from localStorage:', e)
+        }
       }
+      setReports(data || localDb.getAll().sort((a, b) => new Date(b.created_at) - new Date(a.created_at)))
     } catch (err) {
       console.error('Error fetching reports:', err)
       showToast('فشل في تحميل التقارير', 'error')
