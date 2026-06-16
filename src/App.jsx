@@ -1380,9 +1380,17 @@ ${c(report.general_notes)}
 
       {/* Delete Confirmation */}
       {confirmDelete && (
-        <ConfirmationModal message="هل أنت متأكد من حذف هذا التقرير؟"
-          onConfirm={() => handleDelete(confirmDelete)}
-          onCancel={() => setConfirmDelete(null)} />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-[#0B0F19] border border-white/[0.08] rounded-3xl max-w-sm w-full p-6 shadow-[0_8px_64px_rgba(0,0,0,0.6)]">
+            <p className="text-white text-center mb-6">هل أنت متأكد من حذف هذا التقرير؟</p>
+            <div className="flex gap-3">
+              <button type="button" onClick={() => setConfirmDelete(null)}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-gray-400 font-medium hover:text-white hover:bg-white/[0.08] transition-all">إلغاء</button>
+              <button type="button" onClick={() => handleDelete(confirmDelete)}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-red-500/20 border border-red-500/30 text-red-300 font-medium hover:bg-red-500/30 transition-all">حذف</button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* View Report Modal */}
