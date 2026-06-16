@@ -466,12 +466,17 @@ export default function App() {
   const handleDelete = async (id) => {
     try {
       const sb = getSupabase()
+      let deleted = false
       if (sb) {
-        const { error } = await sb.from('field_inspections').delete().eq('id', id)
-        if (error) throw error
-      } else {
-        localDb.remove(id)
+        try {
+          const { error } = await sb.from('field_inspections').delete().eq('id', id)
+          if (error) throw error
+          deleted = true
+        } catch (e) {
+          console.warn('Supabase delete failed, falling back to localStorage:', e)
+        }
       }
+      if (!deleted) localDb.remove(id)
       showToast('تم حذف التقرير بنجاح', 'success')
       fetchReports()
     } catch (err) {
