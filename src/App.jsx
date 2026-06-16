@@ -286,9 +286,9 @@ export default function App() {
     needs: [], other_needs: '', general_notes: '',
   })
 
-  const currentForm = activeTab === 'tab1' ? mosqueForm : disabilityForm
-
   const [activeTab, setActiveTab] = useState('tab1')
+
+  const currentForm = activeTab === 'tab1' ? mosqueForm : disabilityForm
   const pdfTemplateRef = useRef(null)
   const [reports, setReports] = useState([])
   const [submitting, setSubmitting] = useState(false)
