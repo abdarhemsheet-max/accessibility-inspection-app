@@ -427,7 +427,7 @@ export default function App() {
       }
       showToast(editId ? 'تم تحديث التقرير بنجاح' : 'تم حفظ التقرير بنجاح', 'success')
       resetForm()
-      fetchReports()
+      setReports(localDb.getAll().sort((a, b) => new Date(b.created_at) - new Date(a.created_at)))
     } catch (err) {
       console.error('Error saving report:', err)
       showToast('فشل في حفظ التقرير', 'error')
@@ -482,7 +482,7 @@ export default function App() {
       }
       if (!deleted) localDb.remove(id)
       showToast('تم حذف التقرير بنجاح', 'success')
-      fetchReports()
+      setReports(localDb.getAll().sort((a, b) => new Date(b.created_at) - new Date(a.created_at)))
     } catch (err) {
       console.error('Error deleting report:', err)
       showToast('فشل في حذف التقرير', 'error')
