@@ -92,22 +92,33 @@ const localDb = {
 }
 
 const FACILITY_NAMES = [
-  'دورات المياه', 'أماكن الوضوء', 'مدخل المسجد', 'مواقف السيارات',
-  'منحدرات ذوي الإعاقة', 'مصلى النساء', 'نظام الصوت', 'الإنارة',
-  'التهوية', 'التكييف', 'السجاد', 'مخارج الطوارئ',
-  'اللوحات الإرشادية', 'النظافة العامة', 'المصاحف', 'المكتبة',
-  'كاميرات المراقبة', 'طفايات الحريق', 'سكن الإمام (إن وجد)', 'سكن المؤذن (إن وجد)',
+  'دورات المياه وأماكن الوضوء', 'مدخل المسجد',
+  'المنحدرات وممرات ذوي الإعاقة', 'نظام الصوت',
+  'مسارات الحركة', 'أماكن مخصصة للكراسي المتحركة',
+  'اللوحات والوسائل الإرشادية', 'الوسائل المساعدة',
+  'التجهيزات الأخرى',
 ]
 
-const FACILITY_STATUSES = ['نعم', 'لا', 'يحتاج صيانة', 'غير موجود']
+const FACILITY_DESCRIPTIONS = {
+  'دورات المياه وأماكن الوضوء': 'مدى ملاءمة دورات المياه وأماكن الوضوء لاستخدام الأشخاص ذوي الإعاقة',
+  'مدخل المسجد': 'سهولة الوصول إلى المسجد وخلو المدخل من العوائق',
+  'المنحدرات وممرات ذوي الإعاقة': 'توفر المنحدرات والممرات وسهولة استخدامها',
+  'نظام الصوت': 'وضوح الصوت داخل المسجد بما يخدم جميع المصلين',
+  'مسارات الحركة': 'توفر مسارات حركة مناسبة لذوي الإعاقة',
+  'أماكن مخصصة للكراسي المتحركة': 'وجود أماكن مخصصة للكراسي المتحركة',
+  'اللوحات والوسائل الإرشادية': 'توفر لوحات ووسائل إرشادية مناسبة',
+  'الوسائل المساعدة': 'توفر وسائل مساعدة عند الحاجة',
+  'التجهيزات الأخرى': 'أي تجهيزات أخرى تخدم الأشخاص ذوي الإعاقة',
+}
 
-const MOSQUE_LEVELS = [
-  { value: 'ممتاز', color: 'from-emerald-500/20 to-emerald-600/10 border-emerald-500/40 text-emerald-300' },
-  { value: 'جيد جداً', color: 'from-cyan-500/20 to-cyan-600/10 border-cyan-500/40 text-cyan-300' },
-  { value: 'جيد', color: 'from-blue-500/20 to-blue-600/10 border-blue-500/40 text-blue-300' },
-  { value: 'يحتاج تطوير', color: 'from-amber-500/20 to-amber-600/10 border-amber-500/40 text-amber-300' },
-  { value: 'غير صالح', color: 'from-red-500/20 to-red-600/10 border-red-500/40 text-red-300' },
-]
+const FACILITY_STATUSES = ['مناسب', 'يحتاج تحسين', 'غير متوفر', 'لا ينطبق']
+
+const FACILITY_STATUS_COLORS = {
+  'مناسب': 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300',
+  'يحتاج تحسين': 'bg-amber-500/20 border-amber-500/40 text-amber-300',
+  'غير متوفر': 'bg-red-500/20 border-red-500/40 text-red-300',
+  'لا ينطبق': 'bg-gray-500/20 border-gray-500/40 text-gray-300',
+}
 
 const DISABILITY_TYPES = ['حركية', 'بصرية', 'سمعية', 'ذهنية', 'توحد', 'متعددة', 'أخرى']
 const MARITAL_STATUSES = ['أعزب', 'متزوج', 'مطلق', 'أرمل']
@@ -267,10 +278,9 @@ const makeEmptyFacilityEvals = () => {
 export default function App() {
   const [formData, setFormData] = useState({
     recordType: 'mosque',
-    mosque_name: '', mosque_number: '', region: '', municipality: '', district: '',
-    visit_date: '', evaluator_name: '', visit_start_time: '', visit_end_time: '',
+    mosque_name: '', region: '', visit_date: '',
     facility_evaluations: makeEmptyFacilityEvals(),
-    total_percentage: 0, overall_level: '', general_notes: '', recommendations: '', images: [],
+    general_notes: '', recommendations: '',
     full_name: '', gender: '', age: '', birth_date: '', marital_status: '', phone: '', residence_area: '',
     disability_type: '', disability_degree: '', disability_cause: '', injury_date: '',
     is_permanent: '', uses_wheelchair: '',
@@ -352,13 +362,10 @@ export default function App() {
     })
   }
 
+  // eslint-disable-next-line no-unused-vars
   const calcPercentage = useCallback(() => {
-    const evals = formData.facility_evaluations
-    const items = Object.values(evals)
-    const total = items.length
-    const positive = items.filter(e => e.status === 'نعم').length
-    return total > 0 ? Math.round((positive / total) * 100) : 0
-  }, [formData.facility_evaluations])
+    return 0
+  }, [])
 
   const handleTabChange = (tab) => {
     setActiveTab(tab)
@@ -371,10 +378,9 @@ export default function App() {
       if (activeTab === 'tab1') {
         return {
           ...base, recordType: 'mosque',
-          mosque_name: '', mosque_number: '', region: '', municipality: '', district: '',
-          visit_date: '', evaluator_name: '', visit_start_time: '', visit_end_time: '',
+          mosque_name: '', region: '', visit_date: '',
           facility_evaluations: makeEmptyFacilityEvals(),
-          total_percentage: 0, overall_level: '', general_notes: '', recommendations: '', images: [],
+          general_notes: '', recommendations: '',
         }
       }
       return {
@@ -408,7 +414,6 @@ export default function App() {
     setSubmitting(true)
     try {
       const payload = { ...formData }
-      if (formData.recordType === 'mosque') payload.total_percentage = calcPercentage()
       const sb = getSupabase()
       if (sb) {
         if (editId) {
@@ -437,14 +442,10 @@ export default function App() {
     const isMosque = report.recordType === 'mosque'
     setFormData({
       recordType: report.recordType || 'mosque',
-      mosque_name: report.mosque_name || '', mosque_number: report.mosque_number || '',
-      region: report.region || '', municipality: report.municipality || '', district: report.district || '',
-      visit_date: report.visit_date || '', evaluator_name: report.evaluator_name || '',
-      visit_start_time: report.visit_start_time || '', visit_end_time: report.visit_end_time || '',
+      mosque_name: report.mosque_name || '',
+      region: report.region || '', visit_date: report.visit_date || '',
       facility_evaluations: report.facility_evaluations || makeEmptyFacilityEvals(),
-      total_percentage: report.total_percentage || 0, overall_level: report.overall_level || '',
       general_notes: report.general_notes || '', recommendations: report.recommendations || '',
-      images: report.images || [],
       full_name: report.full_name || '', gender: report.gender || '', age: report.age || '',
       birth_date: report.birth_date || '', marital_status: report.marital_status || '', phone: report.phone || '',
       residence_area: report.residence_area || '',
@@ -499,11 +500,15 @@ export default function App() {
         const ev = formData.facility_evaluations[name] || {}
         return { name, status: ev.status || '', notes: ev.notes || '' }
       })
+      const desc = (name) => FACILITY_DESCRIPTIONS[name] || ''
       const statusBadge = (status) => {
-        if (status === 'نعم') return '<span style="background:#dcfce7;color:#166534;font-weight:700;padding:2px 10px;border:1px solid #86efac;border-radius:2px;font-size:11px;">نعم</span>'
-        if (status === 'لا') return '<span style="background:#fee2e2;color:#991b1b;font-weight:700;padding:2px 10px;border:1px solid #fca5a5;border-radius:2px;font-size:11px;">لا</span>'
-        if (status === 'يحتاج صيانة') return '<span style="background:#fef9c3;color:#854d0e;font-weight:700;padding:2px 10px;border:1px solid #fde047;border-radius:2px;font-size:11px;">يحتاج صيانة</span>'
-        if (status === 'غير موجود') return '<span style="background:#f3f4f6;color:#6b7280;font-weight:700;padding:2px 10px;border:1px solid #d1d5db;border-radius:2px;font-size:11px;">غير موجود</span>'
+        const colors = {
+          'مناسب': 'background:#dcfce7;color:#166534;',
+          'يحتاج تحسين': 'background:#fef9c3;color:#854d0e;',
+          'غير متوفر': 'background:#fee2e2;color:#991b1b;',
+          'لا ينطبق': 'background:#f3f4f6;color:#6b7280;',
+        }
+        if (status && colors[status]) return `<span style="${colors[status]}font-weight:700;padding:2px 10px;border-radius:2px;font-size:11px;">${status}</span>`
         return '<span style="color:#9ca3af;font-size:11px;">\u2014</span>'
       }
       const contentOrEmpty = (val) => val && val.trim() ? val : 'لم تسجل ملاحظات إضافية.'
@@ -511,49 +516,43 @@ export default function App() {
       if (!el) throw new Error('Template ref not found')
 
       el.innerHTML = `<div dir="rtl" style="width:794px;min-height:1123px;background:#fff;padding:0;font-family:Cairo,Traditonal Arabic,Arial,sans-serif;color:#111827;">
-<style>.a4-page{padding:15mm 18mm}@media print{body{background:#fff}}</style>
+<style>.a4-page{padding:15mm 18mm;position:relative}.page-footer{position:absolute;bottom:10mm;left:18mm;right:18mm;display:flex;justify-content:space-between;font-size:10px;color:#9ca3af;border-top:1px solid #e5e7eb;padding-top:4px;}@media print{body{background:#fff}}</style>
 <div class="a4-page">
-<header style="border-bottom:2px solid #1f2937;padding-bottom:12px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:flex-end;">
-<div style="text-align:right;"><h1 style="font-size:22px;font-weight:800;color:#111827;margin:0 0 4px;">تقييم مرافق المساجد</h1><p style="font-size:16px;font-weight:600;color:#374151;margin:0;">قسم ذوي الإعاقة والاحتياجات الخاصة</p></div>
-<div style="text-align:left;font-size:12px;font-weight:600;color:#374151;"><div>رقم التقرير: <span style="font-family:monospace;">${reportNum}</span></div><div>تاريخ: <span dir="ltr">${formData.visit_date || todayIso}</span></div></div>
+<header style="border-bottom:2px solid #1f2937;padding-bottom:12px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;">
+<div style="display:flex;align-items:center;gap:12px;"><div style="width:55px;height:55px;background:#e5e7eb;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;color:#6b7280;font-weight:700;border:2px solid #d1d5db;">شعار<br/>الجهة</div>
+<div style="text-align:right;"><h1 style="font-size:20px;font-weight:800;color:#111827;margin:0 0 2px;">تقييم ملاءمة المسجد لذوي الإعاقة</h1><p style="font-size:13px;font-weight:600;color:#374151;margin:0;">قسم ذوي الإعاقة والاحتياجات الخاصة</p></div></div>
+<div style="text-align:left;font-size:11px;font-weight:600;color:#374151;"><div>رقم: <span style="font-family:monospace;">${reportNum}</span></div><div>تاريخ: <span dir="ltr">${formData.visit_date || todayIso}</span></div></div>
 </header>
 
-<section style="margin-bottom:20px;">
-<h2 style="font-size:16px;font-weight:700;color:#1f2937;margin:0 0 12px;border-right:4px solid #1f2937;padding-right:8px;">بيانات المسجد</h2>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;border:1px solid #d1d5db;padding:14px;background:#f9fafb;">
-<div><span style="font-size:11px;color:#6b7280;font-weight:700;display:block;">اسم المسجد</span><span style="font-size:14px;font-weight:700;color:#111827;">${formData.mosque_name || '\u2014'}</span></div>
-<div><span style="font-size:11px;color:#6b7280;font-weight:700;display:block;">رقم المسجد</span><span style="font-size:14px;font-weight:700;color:#111827;">${formData.mosque_number || '\u2014'}</span></div>
-<div><span style="font-size:11px;color:#6b7280;font-weight:700;display:block;">المنطقة</span><span style="font-size:14px;font-weight:700;color:#111827;">${formData.region || '\u2014'}</span></div>
-<div><span style="font-size:11px;color:#6b7280;font-weight:700;display:block;">البلدية</span><span style="font-size:14px;font-weight:700;color:#111827;">${formData.municipality || '\u2014'}</span></div>
-<div><span style="font-size:11px;color:#6b7280;font-weight:700;display:block;">الحي</span><span style="font-size:14px;font-weight:700;color:#111827;">${formData.district || '\u2014'}</span></div>
-<div><span style="font-size:11px;color:#6b7280;font-weight:700;display:block;">تاريخ الزيارة</span><span style="font-size:14px;font-weight:700;color:#111827;">${formData.visit_date || '\u2014'}</span></div>
-<div><span style="font-size:11px;color:#6b7280;font-weight:700;display:block;">اسم المقيم</span><span style="font-size:14px;font-weight:700;color:#111827;">${formData.evaluator_name || '\u2014'}</span></div>
-<div><span style="font-size:11px;color:#6b7280;font-weight:700;display:block;">وقت الزيارة</span><span style="font-size:14px;font-weight:700;color:#111827;">${formData.visit_start_time || ''} - ${formData.visit_end_time || ''}</span></div>
+<section style="margin-bottom:18px;">
+<h2 style="font-size:15px;font-weight:700;color:#1f2937;margin:0 0 10px;border-right:4px solid #1f2937;padding-right:8px;">أولاً: بيانات المسجد</h2>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;border:1px solid #d1d5db;padding:12px;background:#f9fafb;font-size:12px;">
+<div><span style="font-weight:700;color:#6b7280;display:block;">اسم المسجد</span><span style="font-size:14px;font-weight:700;color:#111827;">${formData.mosque_name || '\u2014'}</span></div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">المنطقة</span><span style="font-size:14px;font-weight:700;">${formData.region || '\u2014'}</span></div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">تاريخ الزيارة</span>${formData.visit_date || '\u2014'}</div>
 </div>
 </section>
 
-<section style="margin-bottom:20px;">
-<h2 style="font-size:16px;font-weight:700;color:#1f2937;margin:0 0 12px;border-right:4px solid #1f2937;padding-right:8px;">تقييم المرافق</h2>
-<table style="width:100%;text-align:right;font-size:12px;border-collapse:collapse;">
-<thead><tr style="background:#f3f4f6;color:#1f2937;font-weight:700;"><th style="padding:8px;border:1px solid #d1d5db;width:32px;">م</th><th style="padding:8px;border:1px solid #d1d5db;">المرفق</th><th style="padding:8px;border:1px solid #d1d5db;text-align:center;width:100px;">الحالة</th><th style="padding:8px;border:1px solid #d1d5db;">ملاحظات</th></tr></thead>
-<tbody>${facilities.map((f, i) => `<tr><td style="padding:8px;border:1px solid #d1d5db;text-align:center;color:#6b7280;">${i + 1}</td><td style="padding:8px;border:1px solid #d1d5db;font-weight:600;">${f.name}</td><td style="padding:8px;text-align:center;border:1px solid #d1d5db;">${statusBadge(f.status)}</td><td style="padding:8px;border:1px solid #d1d5db;color:#4b5563;">${f.notes || '\u2014'}</td></tr>`).join('')}</tbody>
+<section style="margin-bottom:18px;">
+<h2 style="font-size:15px;font-weight:700;color:#1f2937;margin:0 0 10px;border-right:4px solid #1f2937;padding-right:8px;">ثانياً: تقييم مرافق المسجد لذوي الإعاقة</h2>
+<table style="width:100%;text-align:right;font-size:11px;border-collapse:collapse;">
+<thead><tr style="background:#f3f4f6;color:#1f2937;font-weight:700;"><th style="padding:7px;border:1px solid #d1d5db;width:28px;">م</th><th style="padding:7px;border:1px solid #d1d5db;">عنصر التقييم</th><th style="padding:7px;border:1px solid #d1d5db;">الوصف</th><th style="padding:7px;border:1px solid #d1d5db;text-align:center;width:90px;">التقييم</th><th style="padding:7px;border:1px solid #d1d5db;">ملاحظات</th></tr></thead>
+<tbody>${facilities.map((f, i) => `<tr><td style="padding:6px;border:1px solid #d1d5db;text-align:center;color:#6b7280;">${i+1}</td><td style="padding:6px;border:1px solid #d1d5db;font-weight:600;">${f.name}</td><td style="padding:6px;border:1px solid #d1d5db;color:#4b5563;font-size:10px;">${desc(f.name)}</td><td style="padding:6px;border:1px solid #d1d5db;text-align:center;">${statusBadge(f.status)}</td><td style="padding:6px;border:1px solid #d1d5db;color:#4b5563;">${f.notes || '\u2014'}</td></tr>`).join('')}</tbody>
 </table>
 </section>
 
-<section style="margin-bottom:20px;">
-<h2 style="font-size:16px;font-weight:700;color:#1f2937;margin:0 0 12px;border-right:4px solid #1f2937;padding-right:8px;">التقييم النهائي</h2>
-<div style="display:flex;gap:16px;margin-bottom:12px;">
-<div style="border:1px solid #d1d5db;padding:12px;background:#f9fafb;flex:1;text-align:center;"><span style="font-size:11px;color:#6b7280;font-weight:700;display:block;">النسبة المئوية</span><span style="font-size:24px;font-weight:800;color:#111827;">${calcPercentage()}%</span></div>
-<div style="border:1px solid #d1d5db;padding:12px;background:#f9fafb;flex:1;text-align:center;"><span style="font-size:11px;color:#6b7280;font-weight:700;display:block;">المستوى</span><span style="font-size:18px;font-weight:700;color:#111827;">${formData.overall_level || '\u2014'}</span></div>
-</div>
+<section style="margin-bottom:18px;">
+<h2 style="font-size:15px;font-weight:700;color:#1f2937;margin:0 0 10px;border-right:4px solid #1f2937;padding-right:8px;">ثالثاً: التقييم النهائي</h2>
 <div style="border:1px solid #d1d5db;margin-bottom:8px;"><div style="background:#f3f4f6;padding:8px 12px;border-bottom:1px solid #d1d5db;font-weight:700;color:#1f2937;">ملاحظات عامة</div><div style="padding:10px 12px;font-size:13px;color:#4b5563;">${contentOrEmpty(formData.general_notes)}</div></div>
 <div style="border:1px solid #d1d5db;"><div style="background:#f3f4f6;padding:8px 12px;border-bottom:1px solid #d1d5db;font-weight:700;color:#1f2937;">التوصيات</div><div style="padding:10px 12px;font-size:13px;color:#4b5563;">${contentOrEmpty(formData.recommendations)}</div></div>
 </section>
 
 <section style="margin-top:40px;display:flex;justify-content:space-between;text-align:center;">
-<div style="width:45%;"><p style="font-weight:700;color:#1f2937;margin-bottom:24px;">مُعِد التقرير</p><p style="border-top:1px solid #9ca3af;padding-top:6px;font-size:13px;color:#4b5563;">التوقيع</p></div>
-<div style="width:45%;"><p style="font-weight:700;color:#1f2937;margin-bottom:24px;">الاعتماد والمصادقة</p><p style="border-top:1px solid #9ca3af;padding-top:6px;font-size:13px;color:#4b5563;">التوقيع والختم</p></div>
+<div style="width:45%;"><p style="font-weight:700;color:#1f2937;margin-bottom:18px;">مُعِد التقرير</p><p style="border-top:1px solid #9ca3af;padding-top:6px;font-size:11px;color:#4b5563;">الاسم: _______________ التوقيع: _______________</p><p style="font-size:10px;color:#9ca3af;margin-top:4px;">التاريخ: _______________</p></div>
+<div style="width:45%;"><p style="font-weight:700;color:#1f2937;margin-bottom:18px;">الاعتماد والمصادقة</p><p style="border-top:1px solid #9ca3af;padding-top:6px;font-size:11px;color:#4b5563;">الاسم: _______________ التوقيع: _______________</p><p style="font-size:10px;color:#9ca3af;margin-top:4px;">التاريخ: _______________ الختم: _______________</p></div>
 </section>
+
+<div class="page-footer"><span>قسم ذوي الإعاقة والاحتياجات الخاصة</span><span>صفحة 1 من 1</span></div>
 </div></div>`
 
       await document.fonts.ready
@@ -759,39 +758,45 @@ ${c(formData.general_notes)}
           const ev = (report.facility_evaluations || {})[name] || {}
           return { name, status: ev.status || '', notes: ev.notes || '' }
         })
+        const desc = (name) => FACILITY_DESCRIPTIONS[name] || ''
         const statusBadge = (s) => {
-          if (s === 'نعم') return '<span style="background:#dcfce7;color:#166534;padding:2px 10px;border:1px solid #86efac;border-radius:2px;font-size:11px;font-weight:700;">نعم</span>'
-          if (s === 'لا') return '<span style="background:#fee2e2;color:#991b1b;padding:2px 10px;border:1px solid #fca5a5;border-radius:2px;font-size:11px;font-weight:700;">لا</span>'
-          if (s === 'يحتاج صيانة') return '<span style="background:#fef9c3;color:#854d0e;padding:2px 10px;border:1px solid #fde047;border-radius:2px;font-size:11px;font-weight:700;">يحتاج صيانة</span>'
-          if (s === 'غير موجود') return '<span style="background:#f3f4f6;color:#6b7280;padding:2px 10px;border:1px solid #d1d5db;border-radius:2px;font-size:11px;font-weight:700;">غير موجود</span>'
+          const colors = {
+            'مناسب': 'background:#dcfce7;color:#166534;',
+            'يحتاج تحسين': 'background:#fef9c3;color:#854d0e;',
+            'غير متوفر': 'background:#fee2e2;color:#991b1b;',
+            'لا ينطبق': 'background:#f3f4f6;color:#6b7280;',
+          }
+          if (s && colors[s]) return `<span style="${colors[s]}font-weight:700;padding:2px 10px;border-radius:2px;font-size:11px;">${s}</span>`
           return '<span style="color:#9ca3af;font-size:11px;">\u2014</span>'
         }
         el.innerHTML = `<div dir="rtl" style="width:794px;min-height:1123px;background:#fff;padding:0;font-family:Cairo,Traditonal Arabic,Arial,sans-serif;color:#111827;">
-<style>.a4-page{padding:15mm 18mm}@media print{body{background:#fff}}</style>
+<style>.a4-page{padding:15mm 18mm;position:relative}.page-footer{position:absolute;bottom:10mm;left:18mm;right:18mm;display:flex;justify-content:space-between;font-size:10px;color:#9ca3af;border-top:1px solid #e5e7eb;padding-top:4px;}@media print{body{background:#fff}}</style>
 <div class="a4-page">
-<header style="border-bottom:2px solid #1f2937;padding-bottom:12px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:flex-end;">
-<div style="text-align:right;"><h1 style="font-size:22px;font-weight:800;color:#111827;margin:0 0 4px;">تقييم مرافق المساجد</h1><p style="font-size:16px;font-weight:600;color:#374151;margin:0;">قسم ذوي الإعاقة والاحتياجات الخاصة</p></div>
-<div style="text-align:left;font-size:12px;font-weight:600;color:#374151;"><div>رقم: <span style="font-family:monospace;">${reportNum}</span></div><div>تاريخ: <span dir="ltr">${report.visit_date || todayIso}</span></div></div>
+<header style="border-bottom:2px solid #1f2937;padding-bottom:12px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;">
+<div style="display:flex;align-items:center;gap:12px;"><div style="width:55px;height:55px;background:#e5e7eb;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;color:#6b7280;font-weight:700;border:2px solid #d1d5db;">شعار<br/>الجهة</div>
+<div style="text-align:right;"><h1 style="font-size:20px;font-weight:800;color:#111827;margin:0 0 2px;">تقييم ملاءمة المسجد لذوي الإعاقة</h1><p style="font-size:13px;font-weight:600;color:#374151;margin:0;">قسم ذوي الإعاقة والاحتياجات الخاصة</p></div></div>
+<div style="text-align:left;font-size:11px;font-weight:600;color:#374151;"><div>رقم: <span style="font-family:monospace;">${reportNum}</span></div><div>تاريخ: <span dir="ltr">${report.visit_date || todayIso}</span></div></div>
 </header>
-<section style="margin-bottom:20px;">
-<h2 style="font-size:16px;font-weight:700;color:#1f2937;margin:0 0 12px;border-right:4px solid #1f2937;padding-right:8px;">بيانات المسجد</h2>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;border:1px solid #d1d5db;padding:14px;background:#f9fafb;">
+<section style="margin-bottom:18px;">
+<h2 style="font-size:15px;font-weight:700;color:#1f2937;margin:0 0 10px;border-right:4px solid #1f2937;padding-right:8px;">أولاً: بيانات المسجد</h2>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;border:1px solid #d1d5db;padding:12px;background:#f9fafb;font-size:12px;">
 <div><span style="font-weight:700;color:#6b7280;display:block;">اسم المسجد</span>${report.mosque_name || '\u2014'}</div>
 <div><span style="font-weight:700;color:#6b7280;display:block;">المنطقة</span>${report.region || '\u2014'}</div>
 <div><span style="font-weight:700;color:#6b7280;display:block;">تاريخ الزيارة</span>${report.visit_date || '\u2014'}</div>
 </div>
 </section>
-<section style="margin-bottom:20px;">
-<h2 style="font-size:16px;font-weight:700;color:#1f2937;margin:0 0 12px;border-right:4px solid #1f2937;padding-right:8px;">تقييم المرافق</h2>
-<table style="width:100%;text-align:right;font-size:12px;border-collapse:collapse;">
-<thead><tr style="background:#f3f4f6;color:#1f2937;font-weight:700;"><th style="padding:8px;border:1px solid #d1d5db;">م</th><th style="padding:8px;border:1px solid #d1d5db;">المرفق</th><th style="padding:8px;border:1px solid #d1d5db;text-align:center;">الحالة</th><th style="padding:8px;border:1px solid #d1d5db;">ملاحظات</th></tr></thead>
-<tbody>${facilities.map((f, i) => `<tr><td style="padding:8px;border:1px solid #d1d5db;text-align:center;color:#6b7280;">${i + 1}</td><td style="padding:8px;border:1px solid #d1d5db;font-weight:600;">${f.name}</td><td style="padding:8px;text-align:center;border:1px solid #d1d5db;">${statusBadge(f.status)}</td><td style="padding:8px;border:1px solid #d1d5db;color:#4b5563;">${f.notes || '\u2014'}</td></tr>`).join('')}</tbody>
+<section style="margin-bottom:18px;">
+<h2 style="font-size:15px;font-weight:700;color:#1f2937;margin:0 0 10px;border-right:4px solid #1f2937;padding-right:8px;">ثانياً: تقييم مرافق المسجد لذوي الإعاقة</h2>
+<table style="width:100%;text-align:right;font-size:11px;border-collapse:collapse;">
+<thead><tr style="background:#f3f4f6;color:#1f2937;font-weight:700;"><th style="padding:7px;border:1px solid #d1d5db;width:28px;">م</th><th style="padding:7px;border:1px solid #d1d5db;">عنصر التقييم</th><th style="padding:7px;border:1px solid #d1d5db;">الوصف</th><th style="padding:7px;border:1px solid #d1d5db;text-align:center;width:90px;">التقييم</th><th style="padding:7px;border:1px solid #d1d5db;">ملاحظات</th></tr></thead>
+<tbody>${facilities.map((f, i) => `<tr><td style="padding:6px;border:1px solid #d1d5db;text-align:center;color:#6b7280;">${i+1}</td><td style="padding:6px;border:1px solid #d1d5db;font-weight:600;">${f.name}</td><td style="padding:6px;border:1px solid #d1d5db;color:#4b5563;font-size:10px;">${desc(f.name)}</td><td style="padding:6px;border:1px solid #d1d5db;text-align:center;">${statusBadge(f.status)}</td><td style="padding:6px;border:1px solid #d1d5db;color:#4b5563;">${f.notes || '\u2014'}</td></tr>`).join('')}</tbody>
 </table>
 </section>
-<section style="margin-top:40px;display:flex;justify-content:space-between;text-align:center;">
-<div style="width:45%;"><p style="font-weight:700;color:#1f2937;margin-bottom:24px;">مُعِد التقرير</p><p style="border-top:1px solid #9ca3af;padding-top:6px;font-size:13px;color:#4b5563;">التوقيع</p></div>
-<div style="width:45%;"><p style="font-weight:700;color:#1f2937;margin-bottom:24px;">الاعتماد والمصادقة</p><p style="border-top:1px solid #9ca3af;padding-top:6px;font-size:13px;color:#4b5563;">التوقيع والختم</p></div>
+<section style="margin-top:30px;display:flex;justify-content:space-between;text-align:center;">
+<div style="width:45%;"><p style="font-weight:700;color:#1f2937;margin-bottom:18px;">مُعِد التقرير</p><p style="border-top:1px solid #9ca3af;padding-top:6px;font-size:11px;color:#4b5563;">الاسم: _______________ التوقيع: _______________</p><p style="font-size:10px;color:#9ca3af;margin-top:4px;">التاريخ: _______________</p></div>
+<div style="width:45%;"><p style="font-weight:700;color:#1f2937;margin-bottom:18px;">الاعتماد والمصادقة</p><p style="border-top:1px solid #9ca3af;padding-top:6px;font-size:11px;color:#4b5563;">الاسم: _______________ التوقيع: _______________</p><p style="font-size:10px;color:#9ca3af;margin-top:4px;">التاريخ: _______________ الختم: _______________</p></div>
 </section>
+<div class="page-footer"><span>قسم ذوي الإعاقة والاحتياجات الخاصة</span><span>صفحة 1 من 1</span></div>
 </div></div>`
       } else {
         const needsList = report.needs?.length > 0 ? report.needs.join(' - ') : '\u2014'
@@ -1039,26 +1044,14 @@ ${c(report.general_notes)}
         <GlassCard className="mb-6">
           <div className="px-6 sm:px-10 py-6 sm:py-8">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 border border-cyan-500/30 flex items-center justify-center"><Building2 className="w-4 h-4 text-cyan-400" /></div>
-              <h2 className="text-xl font-bold text-white">بيانات المسجد</h2>
+              <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 border border-cyan-500/30"><Building2 className="w-4 h-4 text-cyan-400" /></div>
+              <h2 className="text-xl font-bold text-white">أولاً: بيانات المسجد</h2>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               <GlassInput label="اسم المسجد" icon={Building2} required value={formData.mosque_name} onChange={(e) => handleChange('mosque_name', e.target.value)} placeholder="أدخل اسم المسجد" />
-              <GlassInput label="رقم المسجد" icon={ListChecks} value={formData.mosque_number} onChange={(e) => handleChange('mosque_number', e.target.value)} placeholder="رقم المسجد" />
               <GlassInput label="المنطقة" icon={MapPin} value={formData.region} onChange={(e) => handleChange('region', e.target.value)} placeholder="المنطقة" />
-              <GlassInput label="البلدية" icon={MapPin} value={formData.municipality} onChange={(e) => handleChange('municipality', e.target.value)} placeholder="البلدية" />
-              <GlassInput label="الحي" icon={MapPin} value={formData.district} onChange={(e) => handleChange('district', e.target.value)} placeholder="الحي" />
               <GlassInput label="تاريخ الزيارة" icon={Calendar} required>
                 <input type="date" value={formData.visit_date} onChange={(e) => handleChange('visit_date', e.target.value)}
-                  className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-gray-300 outline-none transition-all duration-300 focus:border-cyan-500/50 focus:bg-white/[0.06] [&::-webkit-calendar-picker-indicator]:filter [&::-webkit-calendar-picker-indicator]:invert-[0.7]" />
-              </GlassInput>
-              <GlassInput label="اسم المقيم" icon={Users} value={formData.evaluator_name} onChange={(e) => handleChange('evaluator_name', e.target.value)} placeholder="اسم المقيم" />
-              <GlassInput label="وقت بداية الزيارة" icon={Clock}>
-                <input type="time" value={formData.visit_start_time} onChange={(e) => handleChange('visit_start_time', e.target.value)}
-                  className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-gray-300 outline-none transition-all duration-300 focus:border-cyan-500/50 focus:bg-white/[0.06] [&::-webkit-calendar-picker-indicator]:filter [&::-webkit-calendar-picker-indicator]:invert-[0.7]" />
-              </GlassInput>
-              <GlassInput label="وقت انتهاء الزيارة" icon={Clock}>
-                <input type="time" value={formData.visit_end_time} onChange={(e) => handleChange('visit_end_time', e.target.value)}
                   className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-gray-300 outline-none transition-all duration-300 focus:border-cyan-500/50 focus:bg-white/[0.06] [&::-webkit-calendar-picker-indicator]:filter [&::-webkit-calendar-picker-indicator]:invert-[0.7]" />
               </GlassInput>
             </div>
@@ -1069,8 +1062,8 @@ ${c(report.general_notes)}
         <GlassCard className="mb-6">
           <div className="px-6 sm:px-10 py-6 sm:py-8">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 border border-cyan-500/30 flex items-center justify-center"><ListChecks className="w-4 h-4 text-cyan-400" /></div>
-              <h2 className="text-xl font-bold text-white">تقييم المرافق</h2>
+              <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 border border-cyan-500/30"><ListChecks className="w-4 h-4 text-cyan-400" /></div>
+              <h2 className="text-xl font-bold text-white">ثانياً: تقييم مرافق المسجد لذوي الإعاقة</h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {FACILITY_NAMES.map((name) => {
@@ -1078,17 +1071,15 @@ ${c(report.general_notes)}
                 return (
                   <GlassCard key={name}>
                     <div className="p-4">
-                      <h3 className="text-white font-bold text-sm mb-3">{name}</h3>
+                      <h3 className="text-white font-bold text-sm mb-1">{name}</h3>
+                      <p className="text-gray-500 text-xs mb-3 leading-relaxed">{FACILITY_DESCRIPTIONS[name]}</p>
                       <div className="flex flex-wrap gap-2 mb-3">
                         {FACILITY_STATUSES.map((status) => (
                           <button key={status} type="button"
                             onClick={() => handleFacilityEvalChange(name, 'status', evalItem.status === status ? '' : status)}
                             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 border
                               ${evalItem.status === status
-                                ? status === 'نعم' ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
-                                  : status === 'لا' ? 'bg-red-500/20 border-red-500/40 text-red-300'
-                                    : status === 'يحتاج صيانة' ? 'bg-amber-500/20 border-amber-500/40 text-amber-300'
-                                      : 'bg-gray-500/20 border-gray-500/40 text-gray-300'
+                                ? FACILITY_STATUS_COLORS[status]
                                 : 'bg-white/[0.03] border-white/[0.06] text-gray-400 hover:text-white hover:bg-white/[0.06]'
                               }`}>
                             {status}
@@ -1110,47 +1101,12 @@ ${c(report.general_notes)}
         <GlassCard className="mb-6">
           <div className="px-6 sm:px-10 py-6 sm:py-8">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 border border-cyan-500/30 flex items-center justify-center"><FileCheck className="w-4 h-4 text-cyan-400" /></div>
-              <h2 className="text-xl font-bold text-white">التقييم النهائي</h2>
+              <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 border border-cyan-500/30"><FileCheck className="w-4 h-4 text-cyan-400" /></div>
+              <h2 className="text-xl font-bold text-white">ثالثاً: التقييم النهائي</h2>
             </div>
-
-            <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-6 mb-6">
-              <div className="flex items-center justify-center gap-8">
-                <div className="text-center">
-                  <span className="text-sm text-gray-400 block mb-1">النسبة المئوية</span>
-                  <span className="text-4xl font-bold text-white">{calcPercentage()}%</span>
-                  <div className="w-full bg-white/[0.06] h-2 rounded-full mt-2 overflow-hidden max-w-[200px]">
-                    <div className="h-full rounded-full bg-gradient-to-l from-cyan-400 to-emerald-400 transition-all duration-500" style={{ width: `${calcPercentage()}%` }} />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="mb-6">
-              <label className="block text-sm text-gray-400 font-medium mb-3">المستوى العام</label>
-              <SegmentedControl options={MOSQUE_LEVELS} value={formData.overall_level} onChange={(v) => handleChange('overall_level', v)} />
-            </div>
-
             <div className="space-y-4">
               <GlassTextarea label="ملاحظات عامة" icon={FileText} value={formData.general_notes} onChange={(e) => handleChange('general_notes', e.target.value)} placeholder="أكتب ملاحظات عامة..." />
               <GlassTextarea label="التوصيات" icon={Lightbulb} value={formData.recommendations} onChange={(e) => handleChange('recommendations', e.target.value)} placeholder="أكتب التوصيات..." />
-            </div>
-
-            <div className="mt-6">
-              <label className="block text-sm text-gray-400 font-medium mb-2">رفع صور</label>
-              <input type="file" multiple accept="image/*"
-                onChange={(e) => {
-                  const files = Array.from(e.target.files).map(f => f.name)
-                  handleChange('images', [...formData.images, ...files])
-                }}
-                className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-cyan-500/20 file:text-cyan-300 hover:file:bg-cyan-500/30 transition-all cursor-pointer" />
-              {formData.images.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {formData.images.map((img, i) => (
-                    <span key={i} className="text-xs text-gray-400 bg-white/[0.04] px-2 py-1 rounded-lg">{img}</span>
-                  ))}
-                </div>
-              )}
             </div>
           </div>
         </GlassCard>
@@ -1563,15 +1519,12 @@ ${c(report.general_notes)}
                 <div className="space-y-5">
                   <div className="grid grid-cols-2 gap-4">
                     <div><span className="text-xs text-gray-500 block">اسم المسجد</span><span className="text-white font-medium">{viewReport.mosque_name || '—'}</span></div>
-                    <div><span className="text-xs text-gray-500 block">تاريخ الزيارة</span><span className="text-white font-medium">{formatDate(viewReport.visit_date)}</span></div>
                     <div><span className="text-xs text-gray-500 block">المنطقة</span><span className="text-white font-medium">{viewReport.region || '—'}</span></div>
-                    <div><span className="text-xs text-gray-500 block">البلدية</span><span className="text-white font-medium">{viewReport.municipality || '—'}</span></div>
-                    <div><span className="text-xs text-gray-500 block">النسبة المئوية</span><span className="text-white font-medium">{viewReport.total_percentage ?? 0}%</span></div>
-                    <div><span className="text-xs text-gray-500 block">المستوى</span><span className="text-white font-medium">{viewReport.overall_level || '—'}</span></div>
+                    <div><span className="text-xs text-gray-500 block">تاريخ الزيارة</span><span className="text-white font-medium">{formatDate(viewReport.visit_date)}</span></div>
                   </div>
                   {viewReport.facility_evaluations && (
                     <div>
-                      <span className="text-xs text-gray-500 block mb-2">تقييم المرافق</span>
+                      <span className="text-xs text-gray-500 block mb-2">تقييم مرافق المسجد لذوي الإعاقة</span>
                       <div className="space-y-2 max-h-60 overflow-y-auto">
                         {Object.entries(viewReport.facility_evaluations).map(([name, ev]) => (
                           <div key={name} className="bg-white/[0.02] rounded-xl p-3 border border-white/[0.04]">
@@ -1579,9 +1532,9 @@ ${c(report.general_notes)}
                             <div className="flex items-center gap-3 mt-1">
                               {ev?.status && (
                                 <span className={`text-xs px-2 py-0.5 rounded-full border
-                                  ${ev.status === 'نعم' ? 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10'
-                                    : ev.status === 'لا' ? 'text-red-400 border-red-500/30 bg-red-500/10'
-                                      : ev.status === 'يحتاج صيانة' ? 'text-amber-400 border-amber-500/30 bg-amber-500/10'
+                                  ${ev.status === 'مناسب' ? 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10'
+                                    : ev.status === 'يحتاج تحسين' ? 'text-amber-400 border-amber-500/30 bg-amber-500/10'
+                                      : ev.status === 'غير متوفر' ? 'text-red-400 border-red-500/30 bg-red-500/10'
                                         : 'text-gray-400 border-gray-500/30 bg-gray-500/10'
                                   }`}>{ev.status}</span>
                               )}
