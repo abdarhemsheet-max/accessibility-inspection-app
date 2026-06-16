@@ -1,8 +1,4 @@
--- تشغيل هذا الملف في SQL Editor في Supabase Dashboard
--- https://supabase.com/dashboard/project/gffszrqotpzdztpltivr/sql/new
--- أو استخدام Supabase CLI: supabase db push
--- (تم تطبيق هذا الترحيل عبر CLI بالفعل)
-
+-- Drop old table and recreate with proper camelCase quoting
 DROP TABLE IF EXISTS public.field_inspections;
 
 CREATE TABLE public.field_inspections (
