@@ -278,11 +278,10 @@ export default function App() {
 
   const [disabilityForm, setDisabilityForm] = useState({
     recordType: 'disability',
-    full_name: '', gender: '', age: '', birth_date: '', marital_status: '', phone: '', residence_area: '',
-    disability_type: '', disability_degree: '', disability_cause: '', injury_date: '',
+    full_name: '', gender: '', age: '', marital_status: '', phone: '', residence_area: '',
+    disability_type: '', disability_degree: '', disability_cause: '',
     is_permanent: '', uses_wheelchair: '',
     education_level: '', is_studying: '', last_qualification: '',
-    employment_status: '', employer: '', occupation: '', monthly_income: '',
     needs: [], other_needs: '', general_notes: '',
   })
 
@@ -380,11 +379,10 @@ export default function App() {
     } else {
       setDisabilityForm({
         recordType: 'disability',
-        full_name: '', gender: '', age: '', birth_date: '', marital_status: '', phone: '', residence_area: '',
-        disability_type: '', disability_degree: '', disability_cause: '', injury_date: '',
+    full_name: '', gender: '', age: '', marital_status: '', phone: '', residence_area: '',
+        disability_type: '', disability_degree: '', disability_cause: '',
         is_permanent: '', uses_wheelchair: '',
         education_level: '', is_studying: '', last_qualification: '',
-        employment_status: '', employer: '', occupation: '', monthly_income: '',
         needs: [], other_needs: '', general_notes: '',
       })
     }
@@ -446,15 +444,13 @@ export default function App() {
       setDisabilityForm({
         recordType: 'disability',
         full_name: report.full_name || '', gender: report.gender || '', age: report.age || '',
-        birth_date: report.birth_date || '', marital_status: report.marital_status || '', phone: report.phone || '',
+        marital_status: report.marital_status || '', phone: report.phone || '',
         residence_area: report.residence_area || '',
         disability_type: report.disability_type || '', disability_degree: report.disability_degree || '',
-        disability_cause: report.disability_cause || '', injury_date: report.injury_date || '',
+        disability_cause: report.disability_cause || '',
         is_permanent: report.is_permanent || '', uses_wheelchair: report.uses_wheelchair || '',
         education_level: report.education_level || '', is_studying: report.is_studying || '',
         last_qualification: report.last_qualification || '',
-        employment_status: report.employment_status || '', employer: report.employer || '',
-        occupation: report.occupation || '', monthly_income: report.monthly_income || '',
         needs: report.needs || [], other_needs: report.other_needs || '',
         general_notes: report.general_notes || '',
       })
@@ -613,7 +609,6 @@ export default function App() {
 <div><span style="font-weight:700;color:#6b7280;display:block;">الاسم الرباعي</span>${f.full_name}</div>
 <div><span style="font-weight:700;color:#6b7280;display:block;">الجنس</span>${f.gender || '\u2014'}</div>
 <div><span style="font-weight:700;color:#6b7280;display:block;">العمر</span>${f.age || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">تاريخ الميلاد</span>${f.birth_date || '\u2014'}</div>
 <div><span style="font-weight:700;color:#6b7280;display:block;">رقم الهاتف</span>${f.phone || '\u2014'}</div>
 <div><span style="font-weight:700;color:#6b7280;display:block;">الحالة الاجتماعية</span>${f.marital_status || '\u2014'}</div>
 <div><span style="font-weight:700;color:#6b7280;display:block;">منطقة السكن</span>${f.residence_area || '\u2014'}</div>
@@ -626,7 +621,6 @@ export default function App() {
 <div><span style="font-weight:700;color:#6b7280;display:block;">نوع الإعاقة</span>${f.disability_type || '\u2014'}</div>
 <div><span style="font-weight:700;color:#6b7280;display:block;">درجة الإعاقة</span>${f.disability_degree || '\u2014'}</div>
 <div><span style="font-weight:700;color:#6b7280;display:block;">سبب الإعاقة</span>${c(f.disability_cause)}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">تاريخ الإصابة</span>${f.injury_date || '\u2014'}</div>
 <div><span style="font-weight:700;color:#6b7280;display:block;">هل الإعاقة دائمة؟</span>${yn(f.is_permanent)}</div>
 <div><span style="font-weight:700;color:#6b7280;display:block;">يستخدم كرسياً متحركاً؟</span>${yn(f.uses_wheelchair)}</div>
 </div>
@@ -652,17 +646,7 @@ export default function App() {
 </section>
 
 <section style="margin-bottom:14px;">
-<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">رابعاً: الحالة الوظيفية</h2>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;border:1px solid #d1d5db;padding:10px;background:#f9fafb;font-size:11px;">
-<div><span style="font-weight:700;color:#6b7280;display:block;">الحالة الوظيفية</span>${f.employment_status || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">جهة العمل</span>${f.employer || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">المهنة</span>${f.occupation || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">الدخل الشهري</span>${f.monthly_income || '\u2014'}</div>
-</div>
-</section>
-
-<section style="margin-bottom:14px;">
-<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">خامساً: الاحتياجات</h2>
+<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">رابعاً: الاحتياجات</h2>
 <div style="border:1px solid #d1d5db;padding:10px;background:#f9fafb;font-size:11px;">
 <div style="margin-bottom:6px;"><span style="font-weight:700;color:#6b7280;display:block;">الاحتياجات المطلوبة</span>${needsList}</div>
 <div><span style="font-weight:700;color:#6b7280;display:block;">احتياجات أخرى</span>${c(f.other_needs)}</div>
@@ -670,7 +654,7 @@ export default function App() {
 </section>
 
 <section style="margin-bottom:14px;">
-<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">سادساً: الملاحظات العامة</h2>
+<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">خامساً: الملاحظات العامة</h2>
 <div style="border:1px solid #d1d5db;padding:10px;background:#f9fafb;font-size:11px;min-height:40px;">
 ${c(f.general_notes)}
 </div>
@@ -796,7 +780,6 @@ ${c(f.general_notes)}
 <div><span style="font-weight:700;color:#6b7280;display:block;">الاسم الرباعي</span>${report.full_name || '\u2014'}</div>
 <div><span style="font-weight:700;color:#6b7280;display:block;">الجنس</span>${report.gender || '\u2014'}</div>
 <div><span style="font-weight:700;color:#6b7280;display:block;">العمر</span>${report.age || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">تاريخ الميلاد</span>${report.birth_date || '\u2014'}</div>
 <div><span style="font-weight:700;color:#6b7280;display:block;">رقم الهاتف</span>${report.phone || '\u2014'}</div>
 <div><span style="font-weight:700;color:#6b7280;display:block;">الحالة الاجتماعية</span>${report.marital_status || '\u2014'}</div>
 <div><span style="font-weight:700;color:#6b7280;display:block;">منطقة السكن</span>${report.residence_area || '\u2014'}</div>
@@ -809,7 +792,6 @@ ${c(f.general_notes)}
 <div><span style="font-weight:700;color:#6b7280;display:block;">نوع الإعاقة</span>${report.disability_type || '\u2014'}</div>
 <div><span style="font-weight:700;color:#6b7280;display:block;">درجة الإعاقة</span>${report.disability_degree || '\u2014'}</div>
 <div><span style="font-weight:700;color:#6b7280;display:block;">سبب الإعاقة</span>${c(report.disability_cause)}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">تاريخ الإصابة</span>${report.injury_date || '\u2014'}</div>
 <div><span style="font-weight:700;color:#6b7280;display:block;">إعاقة دائمة؟</span>${report.is_permanent === 'نعم' ? 'نعم' : 'لا'}</div>
 <div><span style="font-weight:700;color:#6b7280;display:block;">كرسي متحرك؟</span>${report.uses_wheelchair === 'نعم' ? 'نعم' : 'لا'}</div>
 </div>
@@ -835,17 +817,7 @@ ${c(f.general_notes)}
 </section>
 
 <section style="margin-bottom:14px;">
-<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">رابعاً: الحالة الوظيفية</h2>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;border:1px solid #d1d5db;padding:10px;background:#f9fafb;font-size:11px;">
-<div><span style="font-weight:700;color:#6b7280;display:block;">الحالة الوظيفية</span>${report.employment_status || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">جهة العمل</span>${report.employer || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">المهنة</span>${report.occupation || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">الدخل الشهري</span>${report.monthly_income || '\u2014'}</div>
-</div>
-</section>
-
-<section style="margin-bottom:14px;">
-<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">خامساً: الاحتياجات</h2>
+<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">رابعاً: الاحتياجات</h2>
 <div style="border:1px solid #d1d5db;padding:10px;background:#f9fafb;font-size:11px;">
 <div style="margin-bottom:6px;"><span style="font-weight:700;color:#6b7280;display:block;">الاحتياجات</span>${needsList}</div>
 <div><span style="font-weight:700;color:#6b7280;display:block;">احتياجات أخرى</span>${c(report.other_needs)}</div>
@@ -853,7 +825,7 @@ ${c(f.general_notes)}
 </section>
 
 <section style="margin-bottom:14px;">
-<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">سادساً: الملاحظات العامة</h2>
+<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">خامساً: الملاحظات العامة</h2>
 <div style="border:1px solid #d1d5db;padding:10px;background:#f9fafb;font-size:11px;min-height:40px;">
 ${c(report.general_notes)}
 </div>
@@ -1110,10 +1082,6 @@ ${c(report.general_notes)}
                 </select>
               </GlassInput>
               <GlassInput label="العمر" icon={Clock} type="number" value={currentForm.age} onChange={(e) => handleChange('age', e.target.value)} placeholder="العمر" />
-              <GlassInput label="تاريخ الميلاد" icon={Calendar}>
-                <input type="date" value={currentForm.birth_date} onChange={(e) => handleChange('birth_date', e.target.value)}
-                  className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-gray-300 outline-none transition-all duration-300 focus:border-cyan-500/50 focus:bg-white/[0.06] [&::-webkit-calendar-picker-indicator]:filter [&::-webkit-calendar-picker-indicator]:invert-[0.7]" />
-              </GlassInput>
               <GlassInput label="رقم الهاتف (إن وجد)" icon={ListChecks} type="tel" value={currentForm.phone} onChange={(e) => handleChange('phone', e.target.value)} placeholder="رقم الهاتف" />
               <GlassInput label="الحالة الاجتماعية" icon={Users}>
                 <select value={currentForm.marital_status} onChange={(e) => handleChange('marital_status', e.target.value)}
@@ -1144,10 +1112,6 @@ ${c(report.general_notes)}
               </GlassInput>
               <GlassInput label="درجة الإعاقة" icon={ListChecks} value={currentForm.disability_degree} onChange={(e) => handleChange('disability_degree', e.target.value)} placeholder="درجة الإعاقة" />
               <GlassInput label="سبب الإعاقة" icon={FileText} value={currentForm.disability_cause} onChange={(e) => handleChange('disability_cause', e.target.value)} placeholder="سبب الإعاقة" />
-              <GlassInput label="تاريخ الإصابة (إن وجد)" icon={Calendar}>
-                <input type="date" value={currentForm.injury_date} onChange={(e) => handleChange('injury_date', e.target.value)}
-                  className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-gray-300 outline-none transition-all duration-300 focus:border-cyan-500/50 focus:bg-white/[0.06] [&::-webkit-calendar-picker-indicator]:filter [&::-webkit-calendar-picker-indicator]:invert-[0.7]" />
-              </GlassInput>
               <div>
                 <label className="block text-sm text-gray-400 font-medium mb-2">هل الإعاقة دائمة؟</label>
                 <SegmentedControl options={YES_NO_OPTIONS} value={currentForm.is_permanent} onChange={(v) => handleChange('is_permanent', v)} />
@@ -1184,36 +1148,14 @@ ${c(report.general_notes)}
           </div>
         </GlassCard>
 
-        {/* 4. Employment */}
-        <GlassCard className="mb-6">
-          <div className="px-6 sm:px-10 py-6 sm:py-8">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 border border-cyan-500/30"><Building2 className="w-4 h-4 text-cyan-400" /></div>
-              <h2 className="text-xl font-bold text-white">رابعاً: الحالة الوظيفية</h2>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              <GlassInput label="الحالة الوظيفية" icon={Users}>
-                <select value={currentForm.employment_status} onChange={(e) => handleChange('employment_status', e.target.value)}
-                  className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-gray-300 outline-none transition-all appearance-none cursor-pointer focus:border-cyan-500/50 focus:bg-white/[0.06]">
-                  <option value="" className="bg-[#0B0F19]">اختر</option>
-                  {EMPLOYMENT_STATUSES.map(s => <option key={s} value={s} className="bg-[#0B0F19]">{s}</option>)}
-                </select>
-              </GlassInput>
-              {currentForm.employment_status === 'يعمل' && (<>
-                <GlassInput label="جهة العمل (إن وجدت)" icon={Building2} value={currentForm.employer} onChange={(e) => handleChange('employer', e.target.value)} placeholder="جهة العمل" />
-                <GlassInput label="المهنة" icon={ListChecks} value={currentForm.occupation} onChange={(e) => handleChange('occupation', e.target.value)} placeholder="المهنة" />
-                <GlassInput label="الدخل الشهري (إن وجد)" icon={ListChecks} value={currentForm.monthly_income} onChange={(e) => handleChange('monthly_income', e.target.value)} placeholder="الدخل الشهري" />
-              </>)}
-            </div>
-          </div>
-        </GlassCard>
+
 
         {/* 5. Needs */}
         <GlassCard className="mb-6">
           <div className="px-6 sm:px-10 py-6 sm:py-8">
             <div className="flex items-center gap-3 mb-6">
               <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 border border-cyan-500/30"><ListChecks className="w-4 h-4 text-cyan-400" /></div>
-              <h2 className="text-xl font-bold text-white">خامساً: الاحتياجات</h2>
+              <h2 className="text-xl font-bold text-white">رابعاً: الاحتياجات</h2>
             </div>
             <div className="flex flex-wrap gap-3 mb-4">
               {NEED_OPTIONS.map((need) => (
@@ -1234,7 +1176,7 @@ ${c(report.general_notes)}
           <div className="px-6 sm:px-10 py-6 sm:py-8">
             <div className="flex items-center gap-3 mb-6">
               <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 border border-cyan-500/30"><FileText className="w-4 h-4 text-cyan-400" /></div>
-              <h2 className="text-xl font-bold text-white">سادساً: الملاحظات العامة</h2>
+              <h2 className="text-xl font-bold text-white">خامساً: الملاحظات العامة</h2>
             </div>
             <GlassTextarea label="الملاحظات العامة" icon={FileText} value={currentForm.general_notes} onChange={(e) => handleChange('general_notes', e.target.value)} placeholder="أكتب الملاحظات العامة هنا..." />
           </div>
@@ -1450,13 +1392,11 @@ ${c(report.general_notes)}
                     <div><span className="text-xs text-gray-500 block">الاسم الرباعي</span><span className="text-white font-medium">{viewReport.full_name || '—'}</span></div>
                     <div><span className="text-xs text-gray-500 block">الجنس</span><span className="text-white font-medium">{viewReport.gender || '—'}</span></div>
                     <div><span className="text-xs text-gray-500 block">العمر</span><span className="text-white font-medium">{viewReport.age || '—'}</span></div>
-                    <div><span className="text-xs text-gray-500 block">تاريخ الميلاد</span><span className="text-white font-medium">{viewReport.birth_date || '—'}</span></div>
                     <div><span className="text-xs text-gray-500 block">رقم الهاتف</span><span className="text-white font-medium">{viewReport.phone || '—'}</span></div>
                     <div><span className="text-xs text-gray-500 block">الحالة الاجتماعية</span><span className="text-white font-medium">{viewReport.marital_status || '—'}</span></div>
                     <div><span className="text-xs text-gray-500 block">منطقة السكن</span><span className="text-white font-medium">{viewReport.residence_area || '—'}</span></div>
                     <div><span className="text-xs text-gray-500 block">نوع الإعاقة</span><span className="text-white font-medium">{viewReport.disability_type || '—'}</span></div>
                     <div><span className="text-xs text-gray-500 block">درجة الإعاقة</span><span className="text-white font-medium">{viewReport.disability_degree || '—'}</span></div>
-                    <div><span className="text-xs text-gray-500 block">الحالة الوظيفية</span><span className="text-white font-medium">{viewReport.employment_status || '—'}</span></div>
                     <div><span className="text-xs text-gray-500 block">المستوى التعليمي</span><span className="text-white font-medium">{viewReport.education_level || '—'}</span></div>
                     <div><span className="text-xs text-gray-500 block">إعاقة دائمة؟</span><span className="text-white font-medium">{viewReport.is_permanent === 'نعم' ? 'نعم' : 'لا'}</span></div>
                     <div><span className="text-xs text-gray-500 block">كرسي متحرك؟</span><span className="text-white font-medium">{viewReport.uses_wheelchair === 'نعم' ? 'نعم' : 'لا'}</span></div>
