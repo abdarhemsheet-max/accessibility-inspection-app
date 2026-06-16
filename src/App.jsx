@@ -947,8 +947,7 @@ ${c(report.general_notes)}
                     </span>
                   </div>
                   <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white leading-tight tracking-tight">
-                    نظام تقييم الوصول الشامل<br className="hidden sm:block" />
-                    <span className="text-transparent bg-clip-text bg-gradient-to-l from-cyan-300 to-cyan-500">وحصر الحالات</span>
+نظام تقييم
                   </h1>
                   <div className="flex flex-wrap items-center gap-3">
                     <span className="text-sm text-gray-400 bg-white/[0.04] border border-white/[0.06] rounded-full px-4 py-1.5 flex items-center gap-2">
