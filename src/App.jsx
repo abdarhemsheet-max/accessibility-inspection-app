@@ -269,11 +269,15 @@ const makeEmptyFacilityEvals = () => {
 }
 
 export default function App() {
-  const [formData, setFormData] = useState({
+  const [mosqueForm, setMosqueForm] = useState(() => ({
     recordType: 'mosque',
     mosque_name: '', region: '', visit_date: '',
     facility_evaluations: makeEmptyFacilityEvals(),
     general_notes: '', recommendations: '',
+  }))
+
+  const [disabilityForm, setDisabilityForm] = useState({
+    recordType: 'disability',
     full_name: '', gender: '', age: '', birth_date: '', marital_status: '', phone: '', residence_area: '',
     disability_type: '', disability_degree: '', disability_cause: '', injury_date: '',
     is_permanent: '', uses_wheelchair: '',
@@ -281,6 +285,8 @@ export default function App() {
     employment_status: '', employer: '', occupation: '', monthly_income: '',
     needs: [], other_needs: '', general_notes: '',
   })
+
+  const currentForm = activeTab === 'tab1' ? mosqueForm : disabilityForm
 
   const [activeTab, setActiveTab] = useState('tab1')
   const pdfTemplateRef = useRef(null)
@@ -331,11 +337,12 @@ export default function App() {
   }, [fetchReports])
 
   const handleChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
+    const setter = activeTab === 'tab1' ? setMosqueForm : setDisabilityForm
+    setter(prev => ({ ...prev, [field]: value }))
   }
 
   const handleFacilityEvalChange = (facilityName, field, value) => {
-    setFormData(prev => ({
+    setMosqueForm(prev => ({
       ...prev,
       facility_evaluations: {
         ...prev.facility_evaluations,
@@ -345,7 +352,7 @@ export default function App() {
   }
 
   const handleNeedToggle = (need) => {
-    setFormData(prev => {
+    setDisabilityForm(prev => {
       const needs = prev.needs.includes(need)
         ? prev.needs.filter(n => n !== need)
         : [...prev.needs, need]
@@ -360,39 +367,36 @@ export default function App() {
 
   const handleTabChange = (tab) => {
     setActiveTab(tab)
-    resetForm()
   }
 
   const resetForm = () => {
-    setFormData(prev => {
-      const base = { ...prev }
-      if (activeTab === 'tab1') {
-        return {
-          ...base, recordType: 'mosque',
-          mosque_name: '', region: '', visit_date: '',
-          facility_evaluations: makeEmptyFacilityEvals(),
-          general_notes: '', recommendations: '',
-        }
-      }
-      return {
-        ...base, recordType: 'disability',
+    if (activeTab === 'tab1') {
+      setMosqueForm({
+        recordType: 'mosque',
+        mosque_name: '', region: '', visit_date: '',
+        facility_evaluations: makeEmptyFacilityEvals(),
+        general_notes: '', recommendations: '',
+      })
+    } else {
+      setDisabilityForm({
+        recordType: 'disability',
         full_name: '', gender: '', age: '', birth_date: '', marital_status: '', phone: '', residence_area: '',
         disability_type: '', disability_degree: '', disability_cause: '', injury_date: '',
         is_permanent: '', uses_wheelchair: '',
         education_level: '', is_studying: '', last_qualification: '',
         employment_status: '', employer: '', occupation: '', monthly_income: '',
         needs: [], other_needs: '', general_notes: '',
-      }
-    })
+      })
+    }
     setEditId(null)
   }
 
   const validateForm = () => {
-    if (formData.recordType === 'mosque') {
-      if (!formData.visit_date) return 'تاريخ الزيارة مطلوب'
-      if (!formData.mosque_name.trim()) return 'اسم المسجد مطلوب'
+    if (currentForm.recordType === 'mosque') {
+      if (!currentForm.visit_date) return 'تاريخ الزيارة مطلوب'
+      if (!currentForm.mosque_name.trim()) return 'اسم المسجد مطلوب'
     } else {
-      if (!formData.full_name.trim()) return 'الاسم الرباعي مطلوب'
+      if (!currentForm.full_name.trim()) return 'الاسم الرباعي مطلوب'
     }
     return null
   }
@@ -402,7 +406,8 @@ export default function App() {
     if (error) { showToast(error, 'error'); return }
     setSubmitting(true)
     try {
-      const payload = { ...formData }
+      const f = activeTab === 'tab1' ? mosqueForm : disabilityForm
+      const payload = { ...f }
       const sb = getSupabase()
       if (sb) {
         if (editId) {
@@ -429,25 +434,31 @@ export default function App() {
 
   const handleEdit = (report) => {
     const isMosque = report.recordType === 'mosque'
-    setFormData({
-      recordType: report.recordType || 'mosque',
-      mosque_name: report.mosque_name || '',
-      region: report.region || '', visit_date: report.visit_date || '',
-      facility_evaluations: report.facility_evaluations || makeEmptyFacilityEvals(),
-      general_notes: report.general_notes || '', recommendations: report.recommendations || '',
-      full_name: report.full_name || '', gender: report.gender || '', age: report.age || '',
-      birth_date: report.birth_date || '', marital_status: report.marital_status || '', phone: report.phone || '',
-      residence_area: report.residence_area || '',
-      disability_type: report.disability_type || '', disability_degree: report.disability_degree || '',
-      disability_cause: report.disability_cause || '', injury_date: report.injury_date || '',
-      is_permanent: report.is_permanent || '', uses_wheelchair: report.uses_wheelchair || '',
-      education_level: report.education_level || '', is_studying: report.is_studying || '',
-      last_qualification: report.last_qualification || '',
-      employment_status: report.employment_status || '', employer: report.employer || '',
-      occupation: report.occupation || '', monthly_income: report.monthly_income || '',
-      needs: report.needs || [], other_needs: report.other_needs || '',
-      general_notes: report.general_notes || '',
-    })
+    if (isMosque) {
+      setMosqueForm({
+        recordType: 'mosque',
+        mosque_name: report.mosque_name || '',
+        region: report.region || '', visit_date: report.visit_date || '',
+        facility_evaluations: report.facility_evaluations || makeEmptyFacilityEvals(),
+        general_notes: report.general_notes || '', recommendations: report.recommendations || '',
+      })
+    } else {
+      setDisabilityForm({
+        recordType: 'disability',
+        full_name: report.full_name || '', gender: report.gender || '', age: report.age || '',
+        birth_date: report.birth_date || '', marital_status: report.marital_status || '', phone: report.phone || '',
+        residence_area: report.residence_area || '',
+        disability_type: report.disability_type || '', disability_degree: report.disability_degree || '',
+        disability_cause: report.disability_cause || '', injury_date: report.injury_date || '',
+        is_permanent: report.is_permanent || '', uses_wheelchair: report.uses_wheelchair || '',
+        education_level: report.education_level || '', is_studying: report.is_studying || '',
+        last_qualification: report.last_qualification || '',
+        employment_status: report.employment_status || '', employer: report.employer || '',
+        occupation: report.occupation || '', monthly_income: report.monthly_income || '',
+        needs: report.needs || [], other_needs: report.other_needs || '',
+        general_notes: report.general_notes || '',
+      })
+    }
     setActiveTab(isMosque ? 'tab1' : 'tab2')
     setEditId(report.id)
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -473,13 +484,14 @@ export default function App() {
   }
 
   const exportMosquePDF = async () => {
-    if (!formData.mosque_name.trim()) { showToast('يرجى إدخال اسم المسجد أولاً', 'warning'); return }
+    const f = mosqueForm
+    if (!f.mosque_name.trim()) { showToast('يرجى إدخال اسم المسجد أولاً', 'warning'); return }
     setPdfExporting(true)
     try {
       const todayIso = new Date().toISOString().split('T')[0]
       const reportNum = Date.now().toString().slice(-6)
       const facilities = FACILITY_NAMES.map(name => {
-        const ev = formData.facility_evaluations[name] || {}
+        const ev = f.facility_evaluations[name] || {}
         return { name, status: ev.status || '', notes: ev.notes || '' }
       })
       const desc = (name) => FACILITY_DESCRIPTIONS[name] || ''
@@ -503,15 +515,15 @@ export default function App() {
 <header style="border-bottom:2px solid #1f2937;padding-bottom:12px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;">
 <div style="display:flex;align-items:center;gap:12px;"><div style="width:55px;height:55px;background:#e5e7eb;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;color:#6b7280;font-weight:700;border:2px solid #d1d5db;">شعار<br/>الجهة</div>
 <div style="text-align:right;"><h1 style="font-size:20px;font-weight:800;color:#111827;margin:0 0 2px;">تقييم ملاءمة المسجد لذوي الإعاقة</h1><p style="font-size:13px;font-weight:600;color:#374151;margin:0;">قسم ذوي الإعاقة والاحتياجات الخاصة</p></div></div>
-<div style="text-align:left;font-size:11px;font-weight:600;color:#374151;"><div>رقم: <span style="font-family:monospace;">${reportNum}</span></div><div>تاريخ: <span dir="ltr">${formData.visit_date || todayIso}</span></div></div>
+<div style="text-align:left;font-size:11px;font-weight:600;color:#374151;"><div>رقم: <span style="font-family:monospace;">${reportNum}</span></div><div>تاريخ: <span dir="ltr">${f.visit_date || todayIso}</span></div></div>
 </header>
 
 <section style="margin-bottom:18px;">
 <h2 style="font-size:15px;font-weight:700;color:#1f2937;margin:0 0 10px;border-right:4px solid #1f2937;padding-right:8px;">أولاً: بيانات المسجد</h2>
 <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;border:1px solid #d1d5db;padding:12px;background:#f9fafb;font-size:12px;">
-<div><span style="font-weight:700;color:#6b7280;display:block;">اسم المسجد</span><span style="font-size:14px;font-weight:700;color:#111827;">${formData.mosque_name || '\u2014'}</span></div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">المنطقة</span><span style="font-size:14px;font-weight:700;">${formData.region || '\u2014'}</span></div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">تاريخ الزيارة</span>${formData.visit_date || '\u2014'}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">اسم المسجد</span><span style="font-size:14px;font-weight:700;color:#111827;">${f.mosque_name || '\u2014'}</span></div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">المنطقة</span><span style="font-size:14px;font-weight:700;">${f.region || '\u2014'}</span></div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">تاريخ الزيارة</span>${f.visit_date || '\u2014'}</div>
 </div>
 </section>
 
@@ -525,8 +537,8 @@ export default function App() {
 
 <section style="margin-bottom:18px;">
 <h2 style="font-size:15px;font-weight:700;color:#1f2937;margin:0 0 10px;border-right:4px solid #1f2937;padding-right:8px;">ثالثاً: التقييم النهائي</h2>
-<div style="border:1px solid #d1d5db;margin-bottom:8px;"><div style="background:#f3f4f6;padding:8px 12px;border-bottom:1px solid #d1d5db;font-weight:700;color:#1f2937;">ملاحظات عامة</div><div style="padding:10px 12px;font-size:13px;color:#4b5563;">${contentOrEmpty(formData.general_notes)}</div></div>
-<div style="border:1px solid #d1d5db;"><div style="background:#f3f4f6;padding:8px 12px;border-bottom:1px solid #d1d5db;font-weight:700;color:#1f2937;">التوصيات</div><div style="padding:10px 12px;font-size:13px;color:#4b5563;">${contentOrEmpty(formData.recommendations)}</div></div>
+<div style="border:1px solid #d1d5db;margin-bottom:8px;"><div style="background:#f3f4f6;padding:8px 12px;border-bottom:1px solid #d1d5db;font-weight:700;color:#1f2937;">ملاحظات عامة</div><div style="padding:10px 12px;font-size:13px;color:#4b5563;">${contentOrEmpty(f.general_notes)}</div></div>
+<div style="border:1px solid #d1d5db;"><div style="background:#f3f4f6;padding:8px 12px;border-bottom:1px solid #d1d5db;font-weight:700;color:#1f2937;">التوصيات</div><div style="padding:10px 12px;font-size:13px;color:#4b5563;">${contentOrEmpty(f.recommendations)}</div></div>
 </section>
 
 <section style="margin-top:40px;display:flex;justify-content:space-between;text-align:center;">
@@ -555,7 +567,7 @@ export default function App() {
         doc.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight, undefined, 'FAST')
         heightLeft -= pageHeight
       }
-      doc.save(`تقييم_مسجد_${formData.mosque_name.replace(/\s+/g, '_')}.pdf`)
+      doc.save(`تقييم_مسجد_${f.mosque_name.replace(/\s+/g, '_')}.pdf`)
       el.innerHTML = ''
       showToast('تم تصدير PDF بنجاح', 'success')
     } catch (err) {
@@ -567,14 +579,15 @@ export default function App() {
   }
 
   const exportDisabilityPDF = async () => {
-    if (!formData.full_name.trim()) { showToast('يرجى إدخال الاسم الرباعي أولاً', 'warning'); return }
+    const f = disabilityForm
+    if (!f.full_name.trim()) { showToast('يرجى إدخال الاسم الرباعي أولاً', 'warning'); return }
     setPdfExporting(true)
     try {
       const todayIso = new Date().toISOString().split('T')[0]
       const reportNum = Date.now().toString().slice(-6)
       const c = (val) => val && val.trim() ? val : '\u2014'
       const yn = (v) => v === 'نعم' ? 'نعم' : 'لا'
-      const needsList = formData.needs?.length > 0 ? formData.needs.join(' - ') : '\u2014'
+      const needsList = f.needs?.length > 0 ? f.needs.join(' - ') : '\u2014'
       const el = pdfTemplateRef.current
       if (!el) throw new Error('Template ref not found')
 
@@ -597,54 +610,54 @@ export default function App() {
 <section style="margin-bottom:14px;">
 <h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">أولاً: البيانات الشخصية</h2>
 <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;border:1px solid #d1d5db;padding:10px;background:#f9fafb;font-size:11px;">
-<div><span style="font-weight:700;color:#6b7280;display:block;">الاسم الرباعي</span>${formData.full_name}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">الجنس</span>${formData.gender || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">العمر</span>${formData.age || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">تاريخ الميلاد</span>${formData.birth_date || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">رقم الهاتف</span>${formData.phone || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">الحالة الاجتماعية</span>${formData.marital_status || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">منطقة السكن</span>${formData.residence_area || '\u2014'}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">الاسم الرباعي</span>${f.full_name}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">الجنس</span>${f.gender || '\u2014'}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">العمر</span>${f.age || '\u2014'}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">تاريخ الميلاد</span>${f.birth_date || '\u2014'}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">رقم الهاتف</span>${f.phone || '\u2014'}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">الحالة الاجتماعية</span>${f.marital_status || '\u2014'}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">منطقة السكن</span>${f.residence_area || '\u2014'}</div>
 </div>
 </section>
 
 <section style="margin-bottom:14px;">
 <h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">ثانياً: بيانات الإعاقة</h2>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;border:1px solid #d1d5db;padding:10px;background:#f9fafb;font-size:11px;">
-<div><span style="font-weight:700;color:#6b7280;display:block;">نوع الإعاقة</span>${formData.disability_type || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">درجة الإعاقة</span>${formData.disability_degree || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">سبب الإعاقة</span>${c(formData.disability_cause)}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">تاريخ الإصابة</span>${formData.injury_date || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">هل الإعاقة دائمة؟</span>${yn(formData.is_permanent)}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">يستخدم كرسياً متحركاً؟</span>${yn(formData.uses_wheelchair)}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">نوع الإعاقة</span>${f.disability_type || '\u2014'}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">درجة الإعاقة</span>${f.disability_degree || '\u2014'}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">سبب الإعاقة</span>${c(f.disability_cause)}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">تاريخ الإصابة</span>${f.injury_date || '\u2014'}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">هل الإعاقة دائمة؟</span>${yn(f.is_permanent)}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">يستخدم كرسياً متحركاً؟</span>${yn(f.uses_wheelchair)}</div>
 </div>
 </section>
 
 <section style="margin-bottom:14px;">
 <h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">ثالثاً: الحالة الصحية</h2>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;border:1px solid #d1d5db;padding:10px;background:#f9fafb;font-size:11px;">
-<div><span style="font-weight:700;color:#6b7280;display:block;">الأمراض المزمنة</span>${c(formData.chronic_diseases)}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">الأدوية المستخدمة</span>${c(formData.medications)}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">القدرة على الحركة</span>${formData.mobility || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">ملاحظات صحية</span>${c(formData.health_notes)}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">الأمراض المزمنة</span>${c(f.chronic_diseases)}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">الأدوية المستخدمة</span>${c(f.medications)}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">القدرة على الحركة</span>${f.mobility || '\u2014'}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">ملاحظات صحية</span>${c(f.health_notes)}</div>
 </div>
 </section>
 
 <section style="margin-bottom:14px;">
 <h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">ثالثاً: الحالة التعليمية</h2>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;border:1px solid #d1d5db;padding:10px;background:#f9fafb;font-size:11px;">
-<div><span style="font-weight:700;color:#6b7280;display:block;">المستوى التعليمي</span>${formData.education_level || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">هل يدرس حالياً؟</span>${yn(formData.is_studying)}</div>
-<div style="grid-column:span 2;"><span style="font-weight:700;color:#6b7280;display:block;">آخر مؤهل دراسي</span>${c(formData.last_qualification)}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">المستوى التعليمي</span>${f.education_level || '\u2014'}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">هل يدرس حالياً؟</span>${yn(f.is_studying)}</div>
+<div style="grid-column:span 2;"><span style="font-weight:700;color:#6b7280;display:block;">آخر مؤهل دراسي</span>${c(f.last_qualification)}</div>
 </div>
 </section>
 
 <section style="margin-bottom:14px;">
 <h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">رابعاً: الحالة الوظيفية</h2>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;border:1px solid #d1d5db;padding:10px;background:#f9fafb;font-size:11px;">
-<div><span style="font-weight:700;color:#6b7280;display:block;">الحالة الوظيفية</span>${formData.employment_status || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">جهة العمل</span>${formData.employer || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">المهنة</span>${formData.occupation || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">الدخل الشهري</span>${formData.monthly_income || '\u2014'}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">الحالة الوظيفية</span>${f.employment_status || '\u2014'}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">جهة العمل</span>${f.employer || '\u2014'}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">المهنة</span>${f.occupation || '\u2014'}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">الدخل الشهري</span>${f.monthly_income || '\u2014'}</div>
 </div>
 </section>
 
@@ -652,14 +665,14 @@ export default function App() {
 <h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">خامساً: الاحتياجات</h2>
 <div style="border:1px solid #d1d5db;padding:10px;background:#f9fafb;font-size:11px;">
 <div style="margin-bottom:6px;"><span style="font-weight:700;color:#6b7280;display:block;">الاحتياجات المطلوبة</span>${needsList}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">احتياجات أخرى</span>${c(formData.other_needs)}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;">احتياجات أخرى</span>${c(f.other_needs)}</div>
 </div>
 </section>
 
 <section style="margin-bottom:14px;">
 <h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">سادساً: الملاحظات العامة</h2>
 <div style="border:1px solid #d1d5db;padding:10px;background:#f9fafb;font-size:11px;min-height:40px;">
-${c(formData.general_notes)}
+${c(f.general_notes)}
 </div>
 </section>
 
@@ -691,7 +704,7 @@ ${c(formData.general_notes)}
         doc.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight, undefined, 'FAST')
         heightLeft -= pageHeight
       }
-      doc.save(`تقييم_حالة_${formData.full_name.replace(/\s+/g, '_')}.pdf`)
+      doc.save(`تقييم_حالة_${f.full_name.replace(/\s+/g, '_')}.pdf`)
       el.innerHTML = ''
       showToast('تم تصدير PDF بنجاح', 'success')
     } catch (err) {
@@ -988,10 +1001,10 @@ ${c(report.general_notes)}
               <h2 className="text-xl font-bold text-white">أولاً: بيانات المسجد</h2>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              <GlassInput label="اسم المسجد" icon={Building2} required value={formData.mosque_name} onChange={(e) => handleChange('mosque_name', e.target.value)} placeholder="أدخل اسم المسجد" />
-              <GlassInput label="المنطقة" icon={MapPin} value={formData.region} onChange={(e) => handleChange('region', e.target.value)} placeholder="المنطقة" />
+              <GlassInput label="اسم المسجد" icon={Building2} required value={currentForm.mosque_name} onChange={(e) => handleChange('mosque_name', e.target.value)} placeholder="أدخل اسم المسجد" />
+              <GlassInput label="المنطقة" icon={MapPin} value={currentForm.region} onChange={(e) => handleChange('region', e.target.value)} placeholder="المنطقة" />
               <GlassInput label="تاريخ الزيارة" icon={Calendar} required>
-                <input type="date" value={formData.visit_date} onChange={(e) => handleChange('visit_date', e.target.value)}
+                <input type="date" value={currentForm.visit_date} onChange={(e) => handleChange('visit_date', e.target.value)}
                   className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-gray-300 outline-none transition-all duration-300 focus:border-cyan-500/50 focus:bg-white/[0.06] [&::-webkit-calendar-picker-indicator]:filter [&::-webkit-calendar-picker-indicator]:invert-[0.7]" />
               </GlassInput>
             </div>
@@ -1007,7 +1020,7 @@ ${c(report.general_notes)}
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {FACILITY_NAMES.map((name) => {
-                const evalItem = formData.facility_evaluations[name] || { status: '', notes: '' }
+                const evalItem = currentForm.facility_evaluations[name] || { status: '', notes: '' }
                 return (
                   <GlassCard key={name}>
                     <div className="p-4">
@@ -1045,8 +1058,8 @@ ${c(report.general_notes)}
               <h2 className="text-xl font-bold text-white">ثالثاً: التقييم النهائي</h2>
             </div>
             <div className="space-y-4">
-              <GlassTextarea label="ملاحظات عامة" icon={FileText} value={formData.general_notes} onChange={(e) => handleChange('general_notes', e.target.value)} placeholder="أكتب ملاحظات عامة..." />
-              <GlassTextarea label="التوصيات" icon={Lightbulb} value={formData.recommendations} onChange={(e) => handleChange('recommendations', e.target.value)} placeholder="أكتب التوصيات..." />
+              <GlassTextarea label="ملاحظات عامة" icon={FileText} value={currentForm.general_notes} onChange={(e) => handleChange('general_notes', e.target.value)} placeholder="أكتب ملاحظات عامة..." />
+              <GlassTextarea label="التوصيات" icon={Lightbulb} value={currentForm.recommendations} onChange={(e) => handleChange('recommendations', e.target.value)} placeholder="أكتب التوصيات..." />
             </div>
           </div>
         </GlassCard>
@@ -1088,29 +1101,29 @@ ${c(report.general_notes)}
               <h2 className="text-xl font-bold text-white">أولاً: البيانات الشخصية</h2>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              <GlassInput label="الاسم الرباعي" icon={Users} required value={formData.full_name} onChange={(e) => handleChange('full_name', e.target.value)} placeholder="الاسم الرباعي" />
+              <GlassInput label="الاسم الرباعي" icon={Users} required value={currentForm.full_name} onChange={(e) => handleChange('full_name', e.target.value)} placeholder="الاسم الرباعي" />
               <GlassInput label="الجنس" icon={Users}>
-                <select value={formData.gender} onChange={(e) => handleChange('gender', e.target.value)}
+                <select value={currentForm.gender} onChange={(e) => handleChange('gender', e.target.value)}
                   className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-gray-300 outline-none transition-all appearance-none cursor-pointer focus:border-cyan-500/50 focus:bg-white/[0.06]">
                   <option value="" className="bg-[#0B0F19]">اختر</option>
                   <option value="ذكر" className="bg-[#0B0F19]">ذكر</option>
                   <option value="أنثى" className="bg-[#0B0F19]">أنثى</option>
                 </select>
               </GlassInput>
-              <GlassInput label="العمر" icon={Clock} type="number" value={formData.age} onChange={(e) => handleChange('age', e.target.value)} placeholder="العمر" />
+              <GlassInput label="العمر" icon={Clock} type="number" value={currentForm.age} onChange={(e) => handleChange('age', e.target.value)} placeholder="العمر" />
               <GlassInput label="تاريخ الميلاد" icon={Calendar}>
-                <input type="date" value={formData.birth_date} onChange={(e) => handleChange('birth_date', e.target.value)}
+                <input type="date" value={currentForm.birth_date} onChange={(e) => handleChange('birth_date', e.target.value)}
                   className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-gray-300 outline-none transition-all duration-300 focus:border-cyan-500/50 focus:bg-white/[0.06] [&::-webkit-calendar-picker-indicator]:filter [&::-webkit-calendar-picker-indicator]:invert-[0.7]" />
               </GlassInput>
-              <GlassInput label="رقم الهاتف (إن وجد)" icon={ListChecks} type="tel" value={formData.phone} onChange={(e) => handleChange('phone', e.target.value)} placeholder="رقم الهاتف" />
+              <GlassInput label="رقم الهاتف (إن وجد)" icon={ListChecks} type="tel" value={currentForm.phone} onChange={(e) => handleChange('phone', e.target.value)} placeholder="رقم الهاتف" />
               <GlassInput label="الحالة الاجتماعية" icon={Users}>
-                <select value={formData.marital_status} onChange={(e) => handleChange('marital_status', e.target.value)}
+                <select value={currentForm.marital_status} onChange={(e) => handleChange('marital_status', e.target.value)}
                   className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-gray-300 outline-none transition-all appearance-none cursor-pointer focus:border-cyan-500/50 focus:bg-white/[0.06]">
                   <option value="" className="bg-[#0B0F19]">اختر</option>
                   {MARITAL_STATUSES.map(s => <option key={s} value={s} className="bg-[#0B0F19]">{s}</option>)}
                 </select>
               </GlassInput>
-              <GlassInput label="منطقة السكن" icon={MapPin} value={formData.residence_area} onChange={(e) => handleChange('residence_area', e.target.value)} placeholder="منطقة السكن" />
+              <GlassInput label="منطقة السكن" icon={MapPin} value={currentForm.residence_area} onChange={(e) => handleChange('residence_area', e.target.value)} placeholder="منطقة السكن" />
             </div>
           </div>
         </GlassCard>
@@ -1124,25 +1137,25 @@ ${c(report.general_notes)}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               <GlassInput label="نوع الإعاقة" icon={Users}>
-                <select value={formData.disability_type} onChange={(e) => handleChange('disability_type', e.target.value)}
+                <select value={currentForm.disability_type} onChange={(e) => handleChange('disability_type', e.target.value)}
                   className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-gray-300 outline-none transition-all appearance-none cursor-pointer focus:border-cyan-500/50 focus:bg-white/[0.06]">
                   <option value="" className="bg-[#0B0F19]">اختر</option>
                   {DISABILITY_TYPES.map(t => <option key={t} value={t} className="bg-[#0B0F19]">{t}</option>)}
                 </select>
               </GlassInput>
-              <GlassInput label="درجة الإعاقة" icon={ListChecks} value={formData.disability_degree} onChange={(e) => handleChange('disability_degree', e.target.value)} placeholder="درجة الإعاقة" />
-              <GlassInput label="سبب الإعاقة" icon={FileText} value={formData.disability_cause} onChange={(e) => handleChange('disability_cause', e.target.value)} placeholder="سبب الإعاقة" />
+              <GlassInput label="درجة الإعاقة" icon={ListChecks} value={currentForm.disability_degree} onChange={(e) => handleChange('disability_degree', e.target.value)} placeholder="درجة الإعاقة" />
+              <GlassInput label="سبب الإعاقة" icon={FileText} value={currentForm.disability_cause} onChange={(e) => handleChange('disability_cause', e.target.value)} placeholder="سبب الإعاقة" />
               <GlassInput label="تاريخ الإصابة (إن وجد)" icon={Calendar}>
-                <input type="date" value={formData.injury_date} onChange={(e) => handleChange('injury_date', e.target.value)}
+                <input type="date" value={currentForm.injury_date} onChange={(e) => handleChange('injury_date', e.target.value)}
                   className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-gray-300 outline-none transition-all duration-300 focus:border-cyan-500/50 focus:bg-white/[0.06] [&::-webkit-calendar-picker-indicator]:filter [&::-webkit-calendar-picker-indicator]:invert-[0.7]" />
               </GlassInput>
               <div>
                 <label className="block text-sm text-gray-400 font-medium mb-2">هل الإعاقة دائمة؟</label>
-                <SegmentedControl options={YES_NO_OPTIONS} value={formData.is_permanent} onChange={(v) => handleChange('is_permanent', v)} />
+                <SegmentedControl options={YES_NO_OPTIONS} value={currentForm.is_permanent} onChange={(v) => handleChange('is_permanent', v)} />
               </div>
               <div>
                 <label className="block text-sm text-gray-400 font-medium mb-2">يستخدم كرسياً متحركاً؟</label>
-                <SegmentedControl options={YES_NO_OPTIONS} value={formData.uses_wheelchair} onChange={(v) => handleChange('uses_wheelchair', v)} />
+                <SegmentedControl options={YES_NO_OPTIONS} value={currentForm.uses_wheelchair} onChange={(v) => handleChange('uses_wheelchair', v)} />
               </div>
             </div>
           </div>
@@ -1157,7 +1170,7 @@ ${c(report.general_notes)}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               <GlassInput label="المستوى التعليمي" icon={Star}>
-                <select value={formData.education_level} onChange={(e) => handleChange('education_level', e.target.value)}
+                <select value={currentForm.education_level} onChange={(e) => handleChange('education_level', e.target.value)}
                   className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-gray-300 outline-none transition-all appearance-none cursor-pointer focus:border-cyan-500/50 focus:bg-white/[0.06]">
                   <option value="" className="bg-[#0B0F19]">اختر</option>
                   {EDUCATION_LEVELS.map(l => <option key={l} value={l} className="bg-[#0B0F19]">{l}</option>)}
@@ -1165,9 +1178,9 @@ ${c(report.general_notes)}
               </GlassInput>
               <div>
                 <label className="block text-sm text-gray-400 font-medium mb-2">هل يدرس حالياً؟</label>
-                <SegmentedControl options={YES_NO_OPTIONS} value={formData.is_studying} onChange={(v) => handleChange('is_studying', v)} />
+                <SegmentedControl options={YES_NO_OPTIONS} value={currentForm.is_studying} onChange={(v) => handleChange('is_studying', v)} />
               </div>
-              <GlassInput label="آخر مؤهل دراسي" icon={FileText} value={formData.last_qualification} onChange={(e) => handleChange('last_qualification', e.target.value)} placeholder="آخر مؤهل دراسي" />
+              <GlassInput label="آخر مؤهل دراسي" icon={FileText} value={currentForm.last_qualification} onChange={(e) => handleChange('last_qualification', e.target.value)} placeholder="آخر مؤهل دراسي" />
             </div>
           </div>
         </GlassCard>
@@ -1181,16 +1194,16 @@ ${c(report.general_notes)}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               <GlassInput label="الحالة الوظيفية" icon={Users}>
-                <select value={formData.employment_status} onChange={(e) => handleChange('employment_status', e.target.value)}
+                <select value={currentForm.employment_status} onChange={(e) => handleChange('employment_status', e.target.value)}
                   className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-gray-300 outline-none transition-all appearance-none cursor-pointer focus:border-cyan-500/50 focus:bg-white/[0.06]">
                   <option value="" className="bg-[#0B0F19]">اختر</option>
                   {EMPLOYMENT_STATUSES.map(s => <option key={s} value={s} className="bg-[#0B0F19]">{s}</option>)}
                 </select>
               </GlassInput>
-              {formData.employment_status === 'يعمل' && (<>
-                <GlassInput label="جهة العمل (إن وجدت)" icon={Building2} value={formData.employer} onChange={(e) => handleChange('employer', e.target.value)} placeholder="جهة العمل" />
-                <GlassInput label="المهنة" icon={ListChecks} value={formData.occupation} onChange={(e) => handleChange('occupation', e.target.value)} placeholder="المهنة" />
-                <GlassInput label="الدخل الشهري (إن وجد)" icon={ListChecks} value={formData.monthly_income} onChange={(e) => handleChange('monthly_income', e.target.value)} placeholder="الدخل الشهري" />
+              {currentForm.employment_status === 'يعمل' && (<>
+                <GlassInput label="جهة العمل (إن وجدت)" icon={Building2} value={currentForm.employer} onChange={(e) => handleChange('employer', e.target.value)} placeholder="جهة العمل" />
+                <GlassInput label="المهنة" icon={ListChecks} value={currentForm.occupation} onChange={(e) => handleChange('occupation', e.target.value)} placeholder="المهنة" />
+                <GlassInput label="الدخل الشهري (إن وجد)" icon={ListChecks} value={currentForm.monthly_income} onChange={(e) => handleChange('monthly_income', e.target.value)} placeholder="الدخل الشهري" />
               </>)}
             </div>
           </div>
@@ -1207,13 +1220,13 @@ ${c(report.general_notes)}
               {NEED_OPTIONS.map((need) => (
                 <button key={need} type="button" onClick={() => handleNeedToggle(need)}
                   className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 border
-                    ${formData.needs.includes(need)
+                    ${currentForm.needs.includes(need)
                       ? 'bg-cyan-500/20 border-cyan-500/40 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.15)]'
                       : 'bg-white/[0.03] border-white/[0.06] text-gray-400 hover:text-white hover:bg-white/[0.06]'
                     }`}>{need}</button>
               ))}
             </div>
-            <GlassTextarea label="احتياجات أخرى" icon={FileText} value={formData.other_needs} onChange={(e) => handleChange('other_needs', e.target.value)} placeholder="احتياجات أخرى..." />
+            <GlassTextarea label="احتياجات أخرى" icon={FileText} value={currentForm.other_needs} onChange={(e) => handleChange('other_needs', e.target.value)} placeholder="احتياجات أخرى..." />
           </div>
         </GlassCard>
 
@@ -1224,7 +1237,7 @@ ${c(report.general_notes)}
               <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 border border-cyan-500/30"><FileText className="w-4 h-4 text-cyan-400" /></div>
               <h2 className="text-xl font-bold text-white">سادساً: الملاحظات العامة</h2>
             </div>
-            <GlassTextarea label="الملاحظات العامة" icon={FileText} value={formData.general_notes} onChange={(e) => handleChange('general_notes', e.target.value)} placeholder="أكتب الملاحظات العامة هنا..." />
+            <GlassTextarea label="الملاحظات العامة" icon={FileText} value={currentForm.general_notes} onChange={(e) => handleChange('general_notes', e.target.value)} placeholder="أكتب الملاحظات العامة هنا..." />
           </div>
         </GlassCard>
 
