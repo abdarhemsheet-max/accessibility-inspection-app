@@ -1,10 +1,10 @@
-# 🗺️ خارطة الطريق - نظام تقييم الوصول الشامل وحصر الحالات
+# 🗺️ خارطة الطريق — نظام تقييم
 
 ---
 
-## 1. 📋 نظرة عامة sobre النظام
+## 1. 📋 نظرة عامة
 
-نظام ويب متكامل لإدارة تقييم الوصول الشامل للمساجد والمراكز الدينية، تابع لـ **قسم ذوي الإعاقة والاحتياجات الخاصة**. يسمح بإنشاء تقارير ميدانية، حفظها، تصديرها، وإدارة أرشيف كامل - كل هذا في صفحة واحدة بدون تنقل.
+نظام ويب متكامل من صفحة واحدة (SPA) لإدارة تقييم ملاءمة المساجد لذوي الإعاقة وتقييم حالات ذوي الإعاقة، تابع لـ **قسم ذوي الإعاقة والاحتياجات الخاصة**. يوفر نموذجين مستقلين مع أرشيف لكل منهما، تصدير PDF، وتخزين ثنائي (Supabase + localStorage).
 
 ### الجمهور المستهدف
 - مفتشي قسم الإعاقة
@@ -21,280 +21,200 @@
 | **Vite 8** | أداة البناء |
 | **Tailwind CSS v4** | التصميم والتنسيق |
 | **Lucide React** | الأيقونات |
-| **Supabase JS Client** | قاعدة البيانات السحابية (اختياري) |
-| **localStorage** | التخزين المحلي (افتراضي - بدون إعداد) |
+| **Supabase JS Client + Supabase CLI** | قاعدة البيانات السحابية (اختياري) |
+| **localStorage** | التخزين المحلي (احتياطي) |
 | **jsPDF + html2canvas** | تصدير تقارير PDF |
 | **Noto Sans Arabic** | الخط العربي |
+| **GitHub Actions + gh-pages** | CI/CD والنشر التلقائي |
 
 ---
 
-## 3. 🏗️ هيكلة المكونات
+## 3. 🏗️ هيكلة المشروع
 
 ```
-App.jsx (1296 سطر - مكون واحد كامل)
+accessibility-inspection-app/
+├── index.html                     # نقطة الدخول (RTL - خط عربي)
+├── package.json                   # الاعتماديات والأوامر
+├── vite.config.js                 # إعداد Vite + Tailwind
+├── .env.example                   # نموذج متغيرات Supabase
+├── eslint.config.js               # إعدادات ESLint
+├── ROADMAP.md                     # هذا الملف
+├── README.md                      # شعار فقط
+├── supabase-schema.sql            # (قديم) SQL لإنشاء الجدول
+├── start.bat / start.sh           # ملفات التشغيل
+├── ادفع_للمستودع.bat              # سكريبت رفع سريع
+├── تمبلت.html                     # قالب مستقل
+│
+├── src/
+│   ├── main.jsx                   # إدخال React
+│   ├── index.css                  # Tailwind + أنماط (glass, scrollbar)
+│   ├── assets/                    # صور وموارد ثابتة
+│   └── App.jsx                    # ⭐ المكون الرئيسي (1435 سطر)
+│
+├── supabase/                      # ⭐ إعدادات Supabase CLI
+│   ├── config.toml                # إعداد المشروع المحلي
+│   ├── migrations/                # ملفات الترحيل
+│   │   ├── 20260616220623_create_field_inspections_table.sql
+│   │   └── 20260616220758_fix_column_casing.sql
+│   └── .gitignore
+│
+├── sql/
+│   └── migrate.sql                # SQL احتياطي لإنشاء الجدول يدوياً
+│
+├── .github/workflows/
+│   └── deploy.yml                 # CI/CD → GitHub Pages تلقائي
+│
+└── dist/                          # مخرجات البناء (جاهز للنشر)
+    ├── index.html
+    └── assets/
+```
+
+---
+
+## 4. 🧩 هيكلة المكونات (App.jsx)
+
+```javascript
+App.jsx (1435 سطر — مكون واحد كامل)
 │
 ├── 🔧 ثوابت وإعدادات
 │   ├── Supabase Config (lazy init)
 │   ├── localDb Layer (CRUD محلي)
-│   ├── FACILITY_TYPES
-│   ├── FINAL_CLASSIFICATIONS
-│   ├── EVALUATION_ROWS
-│   └── ITEMS_PER_PAGE
+│   ├── FACILITY_NAMES (9 عناصر تقييم)
+│   ├── FACILITY_DESCRIPTIONS
+│   ├── FACILITY_STATUSES (4 مستويات)
+│   ├── DISABILITY_TYPES, MARITAL_STATUSES, EDUCATION_LEVELS
+│   ├── NEED_OPTIONS (10 احتياجات)
+│   └── ITEMS_PER_PAGE = 5
 │
-├── 🧩 مكونات فرعية
-│   ├── Toast                    → إشعارات منبثقة (نجاح/خطأ/تحذير)
-│   ├── GlassCard                → بطاقة زجاجية مع shimmer
+├── 🧩 مكونات JSX داخلية
+│   ├── Toast                    → إشعار منبثق (نجاح/خطأ/تحذير)
+│   ├── GlassCard                → بطاقة زجاجية
 │   ├── GlassInput               → حقل إدخال زجاجي
 │   ├── GlassTextarea            → منطقة نصية زجاجية
-│   ├── Counter                  → عداد (+ / -)
-│   ├── SegmentedControl         → اختيار متعدد الأزرار المضيئة
-│   └── ConfirmationModal        → نافذة تأكيد الحذف
+│   ├── Counter                  → عداد (+/-)
+│   └── SegmentedControl         → اختيار متعدد الأزرار
 │
-├── 🧠 State & Logic (App component)
-│   ├── formData (useState)      → كامل بيانات النموذج
-│   ├── reports (useState)       → قائمة التقارير
-│   ├── UI states → submitting, pdfExporting, loading, etc.
-│   └── Functions → handleSubmit, handleEdit, handleDelete, exportToPDF, fetchReports
+├── 🧠 State & Logic
+│   ├── mosqueForm (useState)    → بيانات نموذج المسجد
+│   ├── disabilityForm (useState)→ بيانات نموذج الإعاقة
+│   ├── reports (useState)       → قائمة التقارير للأرشيف
+│   ├── UI states → submitting, pdfExporting, archiveLoading
+│   └── Functions → handleSubmit, handleEdit, handleDelete,
+│                   exportMosquePDF, exportDisabilityPDF,
+│                   exportFromArchive, fetchReports, renderArchive
 │
-└── 🎨 الواجهة المرئية (13 قسم)
-    ├── خلفيات التوهج (Cyan/Purple blur)
+└── 🎨 الواجهة المرئية (قسمين رئيسيين)
     ├── HEADER: Hero Section
-    ├── SECTION 1: بيانات الزيارة
-    ├── SECTION 2: التقييم الميداني
-    ├── SECTION 3: الملاحظات النوعية
-    ├── SECTION 4: التوصيات
-    ├── SECTION 5: التصنيف النهائي
-    ├── SAVE ACTIONS: أزرار الإجراءات
-    ├── ARCHIVE: أرشيف التقارير (بحث + فلتر + بطاقات + ترقيم)
+    ├── TAB NAVIGATION (تبويبين)
+    ├── TAB 1: تقييم مرافق المساجد
+    │   ├── أولاً: بيانات المسجد
+    │   ├── ثانياً: تقييم المرافق (9 بطاقات تقييم)
+    │   ├── ثالثاً: التقييم النهائي
+    │   ├── أزرار الإجراءات (تفريغ + PDF + حفظ)
+    │   └── أرشيف المساجد (بحث + ترقيم)
+    ├── TAB 2: تقييم حالات ذوي الإعاقة
+    │   ├── أولاً: البيانات الشخصية
+    │   ├── ثانياً: بيانات الإعاقة
+    │   ├── ثالثاً: الحالة التعليمية
+    │   ├── رابعاً: الاحتياجات
+    │   ├── خامساً: الملاحظات العامة
+    │   ├── أزرار الإجراءات
+    │   └── أرشيف الحالات (بحث + ترقيم)
     ├── Toast (مثبت في الأسفل)
-    ├── Confirmation Modal (حذف)
-    └── View Report Modal (عرض تفاصيل)
+    ├── Confirm Delete Modal
+    └── View Report Modal
 ```
 
 ---
 
-## 4. 🔄 تدفق البيانات
+## 5. 🔄 تدفق البيانات
 
 ```
-User → يملأ النموذج → formData (useState)
+[ ملء النموذج ]
+  کاربر → يملأ الحقول → mosqueForm / disabilityForm
   ↓
-[ حفظ ] → validateForm()
-  ├── ✅ صح → Supabase (إذا فيه env) أو localDb
-  │          → showToast(نجاح)
-  │          → resetForm()
-  │          → fetchReports() ← تحديث الأرشيف
-  └── ❌ خطأ → showToast(خطأ)
+[ حفظ ]
+  handleSubmit()
+  ├── validateForm()
+  ├── Supabase (إن توفر)
+  │   ├── ✅ نجاح → saved = true
+  │   └── ❌ فشل → console.warn + fallback
+  ├── localStorage ← localDb.insert(payload)
+  ├── showToast(تم الحفظ)
+  ├── resetForm()
+  └── setReports( localDb.getAll() ) ← تحديث الأرشيف
   ↓
-[ PDF ] → exportToPDF()
-  ├── jspDF ينشئ مستند
-  ├── يملأه من formData
-  └── save() → تحميل الملف
+[ تصدير PDF ]
+  exportMosquePDF() / exportDisabilityPDF()
+  ├── html2canvas(el) ← يصور DOM
+  ├── jsPDF ← ينشئ مستند
+  └── doc.save() ← تحميل
   ↓
-[ أرشيف ] → fetchReports()
-  ├── Supabase? → query مع search + filter
-  └── local? → localDb.query()
+[ أرشيف ]
+  renderArchive(type)
+  ├── reports.filter(r.recordType === type)
+  ├── search + pagination
+  └── عرض بطاقات (عرض/تعديل/حذف/PDF)
   ↓
-[ عرض/تعديل/حذف ]
-  ├── View → setViewReport(report) → Modal
-  ├── Edit → handleEdit(report) → تعبئة النموذج + scrollTo(0)
-  └── Delete → confirm → handleDelete(id)
+[ تعديل ]
+  handleEdit(report)
+  ├── تعبئة mosqueForm / disabilityForm من التقرير
+  ├── setActiveTab + scrollTo(0)
+  └── setEditId(id) ← يظهر "تعديل التقرير #ID"
 ```
-
----
-
-## 5. 🧩 تفصيل أقسام الواجهة
-
-### HEADER - Hero Section
-```
-┌──────────────────────────────────────────────────┐
-│ 🛡️ [التاريخ الهجري]                              │
-│                                                   │
-│  نظام تقييم الوصول الشامل                         │
-│  وحصر الحالات          (توهج سيان)                │
-│                                                   │
-│  🏢 قسم ذوي الإعاقة       ● النظام نشط             │
-│                                                   │
-│        [📅]  [🛡️]  [🗄️]                          │
-└──────────────────────────────────────────────────┘
-```
-- تدرج لوني من `from-cyan-300 to-cyan-500` في العنوان
-- شريط حالة نابض `animate-pulse`
-- 3 أيقونات: التقويم، الدرع، قاعدة البيانات
-
----
-
-### SECTION 1 - بيانات الزيارة
-```
-┌──────────────────────────────────────────────────┐
-│ 📋 بيانات الزيارة                                 │
-│                                                   │
-│  تاريخ الزيارة *  │  اسم المرفق *  │  المنطقة    │
-│  [____date____]    │  [___________]  │  [________] │
-│                                                   │
-│  نوع المرفق        │  عدد الحالات                  │
-│  [مسجد جامع  ▼]    │   [-]   0    [+]             │
-└──────────────────────────────────────────────────┘
-```
-- 5 حقول في Grid: 3 أعمدة (Desktop) → عمود واحد (Mobile)
-- التاريخ واسم المرفق إجباريان (علامة \* حمراء)
-- Counter مع زر ناقص/زائد
-
----
-
-### SECTION 2 - التقييم الميداني
-```
-┌──────────────────────────────────────────────────┐
-│ 📋 التقييم الميداني                               │
-│                                                   │
-│  المحور               │  الحالة     │  ملاحظات    │
-│ ──────────────────────┼─────────────┼──────────── │
-│  المسار الخارجي...    │ [جاهز] [تعديل] │ [______]  │
-│  الحركة الداخلية...   │ [جاهز] [تعديل] │ [______]  │
-│  المرافق الصحية...    │ [جاهز] [تعديل] │ [______]  │
-│  التجهيزات...         │ [جاهز] [تعديل] │ [______]  │
-└──────────────────────────────────────────────────┘
-```
-- **Desktop**: جدول HTML كامل
-- **Mobile**: بطاقات منفصلة (`lg:hidden`)
-- كل محور: 2 خيارات حالة (أخضر/عنبر) + حقل ملاحظات
-
----
-
-### SECTION 3 - الملاحظات النوعية
-```
-┌──────────────────────┬──────────────────────────┐
-│  👍 الإيجابيات        │  👎 السلبيات              │
-│  [________________]  │  [________________]      │
-│  [________________]  │  [________________]      │
-└──────────────────────┴──────────────────────────┘
-```
-- عمودين في Grid (Desktop) → عمود واحد (Mobile)
-- Textarea مقاوم (resize-none) ارتفاع 4 أسطر
-
----
-
-### SECTION 4 - التوصيات
-```
-┌──────────────────────────────────────────────────┐
-│ 💡 التوصيات                                       │
-│                                                   │
-│  التوصيات والاحتياجات الفعلية                     │
-│  [______________________________________________] │
-│  [______________________________________________] │
-└──────────────────────────────────────────────────┘
-```
-- Textarea كبير بمحاذاة كاملة
-
----
-
-### SECTION 5 - التصنيف النهائي
-```
-┌──────────────────────────────────────────────────┐
-│ ✅ التصنيف النهائي                                 │
-│                                                   │
-│  [مهيأ بالكامل]  [يحتاج تعديلات بسيطة]  [غير مهيأ]│
-│      (أخضر)           (عنبر)             (أحمر)   │
-└──────────────────────────────────────────────────┘
-```
-- 3 أزرار مقسمة (Segmented Control)
-- الزر المختار: توهج + تدرج لوني حسب التصنيف
-- غير مختار: شفاف مع hover effect
-
----
-
-### SAVE ACTIONS - شريط الإجراءات
-```
-┌──────────────────────────────────────────────────┐
-│  [🗑️ تفريغ النموذج]  [📥 PDF]  [💾 حفظ التقرير] │
-│                                  (مضيئ - سيان)    │
-│  [تعديل التقرير #ID ] ← عند التعديل               │
-└──────────────────────────────────────────────────┘
-```
-- `sticky bottom-4` - يلتصق بأسفل الشاشة
-- زر تفريغ: يعيد تعيين كل الحقول
-- زر PDF: يصدر التقرير الحالي (يتطلب اسم المرفق)
-- زر حفظ: يتحقق من الحقول → يحفظ (Supabase أو local) → يعيد تحميل الأرشيف
-
----
-
-### ARCHIVE - أرشيف التقارير
-```
-┌──────────────────────────────────────────────────┐
-│ 🗄️ أرشيف التقارير                                │
-│                                                   │
-│  🔍 [البحث باسم المرفق...]                        │
-│  [الكل] [مسجد جامع] [مسجد أوقات] [مركز تحفيظ]    │
-│                                                   │
-│  ┌──────────────────────────────────────────────┐ │
-│  │ اسم المرفق           [التصنيف]  [👁️✏️🗑️]    │ │
-│  │ 📅 التاريخ  📍 المنطقة  🏢 النوع  👥 الحالات  │ │
-│  └──────────────────────────────────────────────┘ │
-│  ┌──────────────────────────────────────────────┐ │
-│  │ ... المزيد من البطاقات ...                    │ │
-│  └──────────────────────────────────────────────┘ │
-│                                                   │
-│        [◀] [1] [2] [3] [...] [▶]                  │
-└──────────────────────────────────────────────────┘
-```
-- بحث حرفي بـ `ilike` (Supabase) أو `includes` (local)
-- فلترة حسب نوع المرفق
-- كل بطاقة: اسم + تصنيف ملون + 5 حقول بيانات + 3 أزرار
-- ترقيم صفحات: 5 تقارير لكل صفحة
-- حالة الفارغة: أيقونة + رسالة "لا توجد تقارير بعد"
-
-### VIEW MODAL - نافذة عرض التقرير
-```
-┌──────────────────────────────────────────────────┐
-│  تفاصيل التقرير                          [✖]    │
-│                                                   │
-│  اسم المرفق   │  تاريخ الزيارة                    │
-│  المنطقة      │  النوع                            │
-│  عدد الحالات  │  التصنيف النهائي                  │
-│                                                   │
-│  التقييم الميداني                                 │
-│  ┌──────────────────────────────────────────────┐ │
-│  │ المسار الخارجي    [جاهز ومناسب]  ملاحظة...    │ │
-│  │ الحركة الداخلية   [يحتاج تعديل]  ملاحظة...   │ │
-│  └──────────────────────────────────────────────┘ │
-│                                                   │
-│  الإيجابيات / السلبيات / التوصيات                 │
-│                                                   │
-│  [إغلاق]                                          │
-└──────────────────────────────────────────────────┘
-```
-- Modal مع backdrop blur
-- scroll ي tự động إذا المحتوى طويل
-- عرض كل حقول التقرير بشكل منظم
 
 ---
 
 ## 6. 🗃️ هيكل قاعدة البيانات
 
-### جدول `field_inspections` (Supabase) / كائن `localStorage`
+### جدول `field_inspections` (Supabase + localStorage)
 
-| الحقل | النوع | إجباري | وصف |
-|-------|-------|--------|-----|
-| `id` | `BIGINT` (PK) / `number` | ✅ | معرف فريد |
-| `visit_date` | `DATE` / `string` | ✅ | تاريخ الزيارة |
-| `facility_name` | `TEXT` / `string` | ✅ | اسم المسجد/المركز |
-| `region` | `TEXT` / `string` | ❌ | المنطقة/المحلة |
-| `facility_type` | `TEXT` / `string` | ❌ | مسجد جامع / أوقات / مركز تحفيظ |
-| `cases_count` | `INTEGER` / `number` | ❌ | عدد الحالات المرصودة |
-| `evaluation_data` | `JSONB` / `object` | ❌ | بيانات التقييم (4 محاور) |
-| `positives` | `TEXT` / `string` | ❌ | الإيجابيات |
-| `negatives` | `TEXT` / `string` | ❌ | السلبيات |
-| `recommendations` | `TEXT` / `string` | ❌ | التوصيات |
-| `final_classification` | `TEXT` / `string` | ❌ | التصنيف النهائي |
-| `created_at` | `TIMESTAMPTZ` / `string` | ❌ | تاريخ الإنشاء |
+#### أعمدة المسجد
+| الحقل | النوع | وصف |
+|-------|-------|-----|
+| `recordType` | `TEXT` | `'mosque'` أو `'disability'` |
+| `mosque_name` | `TEXT` | اسم المسجد |
+| `region` | `TEXT` | المنطقة |
+| `visit_date` | `TEXT` | تاريخ الزيارة |
+| `facility_evaluations` | `JSONB` | تقييم 9 مرافق (status + notes) |
+| `general_notes` | `TEXT` | ملاحظات عامة |
+| `recommendations` | `TEXT` | توصيات |
 
-### بنية `evaluation_data` (JSON):
-```json
-{
-  "external": { "status": "جاهز ومناسب", "notes": "منحدر جيد" },
-  "internal": { "status": "يحتاج تعديل", "notes": "الأبواب ضيقة" },
-  "restroom": { "status": "", "notes": "" },
-  "equipment": { "status": "جاهز ومناسب", "notes": "" }
-}
+#### أعمدة الإعاقة
+| الحقل | النوع | وصف |
+|-------|-------|-----|
+| `full_name` | `TEXT` | الاسم الرباعي |
+| `gender` | `TEXT` | ذكر / أنثى |
+| `age` | `TEXT` | العمر |
+| `marital_status` | `TEXT` | الحالة الاجتماعية |
+| `phone` | `TEXT` | رقم الهاتف |
+| `residence_area` | `TEXT` | منطقة السكن |
+| `disability_type` | `TEXT` | نوع الإعاقة |
+| `disability_degree` | `TEXT` | درجة الإعاقة |
+| `disability_cause` | `TEXT` | سبب الإعاقة |
+| `is_permanent` | `TEXT` | دائمة؟ نعم/لا |
+| `uses_wheelchair` | `TEXT` | يستخدم كرسي متحرك؟ |
+| `education_level` | `TEXT` | المستوى التعليمي |
+| `is_studying` | `TEXT` | يدرس حالياً؟ |
+| `last_qualification` | `TEXT` | آخر مؤهل دراسي |
+| `needs` | `JSONB` | مصفوفة الاحتياجات |
+| `other_needs` | `TEXT` | احتياجات أخرى |
+
+#### أعمدة مشتركة
+| الحقل | النوع | وصف |
+|-------|-------|-----|
+| `id` | `BIGINT` (PK) | معرف فريد |
+| `created_at` | `TIMESTAMPTZ` | تاريخ الإنشاء |
+
+### RLS Policy
+```sql
+CREATE POLICY "anon_all" ON public.field_inspections
+  FOR ALL TO anon USING (true) WITH CHECK (true);
+```
+
+### localStorage Key
+```
+field_inspections_local
 ```
 
 ---
@@ -302,71 +222,54 @@ User → يملأ النموذج → formData (useState)
 ## 7. 🔌 API الداخلي (localDb Layer)
 
 ```javascript
-localDb.insert(record)    // ➕ إضافة → يرجع الكائن مع id + created_at
-localDb.update(id, data)  // ✏️ تحديث → يرجع الكائن المحدث
-localDb.remove(id)        // 🗑️ حذف
-localDb.query({ search, type })  // 🔍 بحث وتصفية → يرجع مصفوفة
-localDb.getAll()          // 📋 كل التقارير
+localDb.insert(record)     // ➕ إضافة → يرجع الكائن مع id + created_at
+localDb.update(id, data)   // ✏️ تحديث → يرجع الكائن المحدث
+localDb.remove(id)         // 🗑️ حذف
+localDb.getAll()           // 📋 كل التقارير ← مصفوفة
+localDb.saveAll(data)      // 💾 حفظ مصفوفة كاملة
 ```
 
-localStorage key: `field_inspections_local`
+نمط التخزين الثنائي:
+- **Supabase** → يحاول أولاً (إن توفر)
+- **localStorage** → احتياطي دائم (يُستخدم فور فشل Supabase)
 
 ---
 
-## 8. 🚀 Roadmap المستقبلية
+## 8. 📄 تصدير PDF
 
-### ✅ المرحلة 1 - الأساس (مكتمل)
-- [x] صفحة واحدة مع جميع الأقسام
-- [x] تخزين محلي (localStorage)
-- [x] إضافة/تعديل/حذف/عرض التقارير
-- [x] بحث وتصفية
-- [x] ترقيم الصفحات
-- [x] تصدير PDF
-- [x] تصميم Liquid Glass (داكن)
-- [x] دعم RTL كامل
-- [x] توافق مع Supabase (اختياري)
+### دالتين رئيسيتين + دالة للأرشيف
 
-### 🔜 المرحلة 2 - التطوير القادم
-- [ ] لوحة إحصائيات (Dashboard) بعدد التقارير، التصنيفات، Charts
-- [ ] تصدير Excel (CSV/XLSX) للتقارير
-- [ ] طباعة التقرير مباشرة
-- [ ] رفع صور (إرفاق صور أثناء التقييم)
-- [ ] توقيع إلكتروني للمفتش
-- [ ] إرسال التقرير عبر البريد الإلكتروني
-- [ ] دعم Multi-User مع صلاحيات
-- [ ] نسخ احتياطي واستعادة (Backup/Restore)
-- [ ] وضع Offline كامل مع مزامنة لاحقة
-- [ ] توطين الدارجة المغربية
+#### `exportMosquePDF()`
+- تقييم المسجد الحالي
+- 4 أقسام: بيانات المسجد ← جدول التقييم (4 أعمدة: م، عنصر تقييم+وصف مدمج، تقييم، ملاحظات) ← تقييم نهائي ← توقيعات
 
-### 📌 المرحلة 3 - متقدم
-- [ ] تطبيق موبايل (PWA)
-- [ ] تقارير إحصائية متقدمة
-- [ ] تكامل مع Google Maps لعرض المواقع
-- [ ] QR Code لكل تقرير
-- [ ] إشعارات فورية
-- [ ] API عام للتكامل مع الأنظمة الحكومية
+#### `exportDisabilityPDF()`
+- تقييم الحالة الحالية
+- 5 أقسام: بيانات شخصية ← بيانات إعاقة ← تعليم ← احتياجات ← ملاحظات ← توقيعات
+
+#### `exportFromArchive(report)`
+- تصدير أي تقرير من الأرشيف (مسجد أو إعاقة)
+- يستخدم `pdfTemplateRef` (div مخفي) ثم `html2canvas` + `jsPDF`
 
 ---
 
-## 9. 📁 هيكل المشروع
+## 9. 🚀 CI/CD — GitHub Pages
 
 ```
-accessibility-inspection-app/
-├── index.html                 # نقطة الدخول (RTL - Arabic font)
-├── package.json               # الاعتماديات
-├── vite.config.js             # إعداد Vite + Tailwind
-├── .env.example               # نموذج متغيرات Supabase
-├── supabase-schema.sql        # SQL لإنشاء الجدول
-├── ROADMAP.md                 # هذا الملف
-├── start.bat                  # ملف تشغيل (Windows)
-├── start.sh                   # ملف تشغيل (Linux/Mac)
-├── src/
-│   ├── main.jsx               # إدخال React
-│   ├── index.css              # Tailwind imports + أنماط
-│   └── App.jsx                # ❤️ المكون الرئيسي (1296 سطر)
-└── dist/                      # مخرجات البناء (جاهز للنشر)
-    ├── index.html
-    └── assets/
+[push → master]
+  ↓
+GitHub Actions (deploy.yml)
+  ├── actions/checkout@v4
+  ├── actions/setup-node@v4
+  ├── npm ci
+  ├── npm run build
+  │   ├── VITE_SUPABASE_URL (من secrets)
+  │   └── VITE_SUPABASE_ANON_KEY (من secrets)
+  ├── actions/configure-pages@v4
+  ├── actions/upload-pages-artifact@v3
+  └── actions/deploy-pages@v4
+  ↓
+[مباشر على https://abdarhemsheet-max.github.io/accessibility-inspection-app/]
 ```
 
 ---
@@ -374,13 +277,48 @@ accessibility-inspection-app/
 ## 10. ⚙️ أوامر سريعة
 
 ```bash
-npm run dev       # تشغيل خادم التطوير
-npm run build     # بناء للإنتاج
-npm run preview   # معاينة البناء
+npm run dev              # تشغيل خادم التطوير
+npm run build            # بناء للإنتاج
+npm run preview          # معاينة البناء محلياً
+npm run lint             # فحص الكود
+
+npx serve dist           # تشغيل البناء محلياً
+
+supabase link --project-ref gffszrqotpzdztpltivr
+supabase db push         # دفع الترحيلات إلى Supabase
+supabase migration new <name>  # إنشاء ترحيل جديد
 ```
 
 ---
 
-> **آخر تحديث:** 7 يونيو 2026  
+## 11. ✅ حالة المهام
+
+### ✅ مكتمل
+- [x] نموذج تقييم المسجد (3 حقول + 9 بطاقات تقييم + تقييم نهائي)
+- [x] نموذج تقييم حالات الإعاقة (5 أقسام)
+- [x] تخزين محلي (localStorage)
+- [x] ربط Supabase مع CRUD كامل
+- [x] أرشيف منفصل لكل تبويب مع بحث وترقيم
+- [x] إضافة/تعديل/حذف/عرض التقارير
+- [x] تصدير PDF (نموذجين + من الأرشيف)
+- [x] دمج عمودي "عنصر التقييم" و"الوصف" في PDF
+- [x] تصميم Liquid Glass داكن
+- [x] دعم RTL كامل مع خط Noto Sans Arabic
+- [x] CI/CD → GitHub Pages تلقائي
+- [x] Supabase fallback إلى localStorage عند الفشل
+- [x] ترحيل Supabase CLI (جدول `field_inspections`)
+
+### 🔜 قيد التطوير
+- [ ] تصدير Excel
+- [ ] طباعة مباشرة
+- [ ] رفع صور
+- [ ] توقيع إلكتروني
+- [ ] لوحة إحصائيات (Dashboard)
+- [ ] دعم Multi-User
+
+---
+
+> **آخر تحديث:** 17 يونيو 2026  
 > **طور بواسطة:** قسم ذوي الإعاقة والاحتياجات الخاصة  
-> **التقنية:** React 19 + Vite 8 + Tailwind CSS v4 + Supabase
+> **التقنية:** React 19 + Vite 8 + Tailwind CSS v4 + Supabase  
+> **مباشر:** https://abdarhemsheet-max.github.io/accessibility-inspection-app/
