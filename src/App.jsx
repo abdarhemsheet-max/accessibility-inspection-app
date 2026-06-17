@@ -45,53 +45,6 @@ const getSupabase = () => {
   return createClient(supabaseUrl, supabaseAnonKey)
 }
 
-// LOCAL STORAGE LAYER
-const STORAGE_KEY = 'field_inspections_local'
-
-const localDb = {
-  getAll() {
-    try {
-      return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')
-    } catch { return [] }
-  },
-  saveAll(data) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
-  },
-  insert(record) {
-    const data = this.getAll()
-    const id = Date.now() + Math.floor(Math.random() * 1000)
-    const entry = { id, ...record, created_at: new Date().toISOString() }
-    data.unshift(entry)
-    this.saveAll(data)
-    return entry
-  },
-  update(id, updates) {
-    const data = this.getAll()
-    const idx = data.findIndex(r => r.id === id)
-    if (idx === -1) return null
-    data[idx] = { ...data[idx], ...updates }
-    this.saveAll(data)
-    return data[idx]
-  },
-  remove(id) {
-    const data = this.getAll().filter(r => r.id !== id)
-    this.saveAll(data)
-  },
-  query({ search, type }) {
-    let data = this.getAll()
-    if (search) {
-      const s = search.toLowerCase()
-      data = data.filter(r =>
-        (r.facility_name || r.mosque_name || r.full_name || '').toLowerCase().includes(s)
-      )
-    }
-    if (type && type !== 'الكل') {
-      data = data.filter(r => r.recordType === type)
-    }
-    return data
-  },
-}
-
 const MOSQUE_AXES = [
   { name: 'المسار الخارجي والدخول', description: '(المواقف، المنحدرات، العتبات)' },
   { name: 'الحركة الداخلية والأبواب', description: '(اتساع الأبواب، غياب العوائق)' },
@@ -107,9 +60,9 @@ const FACILITY_STATUS_COLORS = {
   'لا ينطبق': 'bg-gray-500/20 border-gray-500/40 text-gray-300',
 }
 
-const DISABILITY_TYPES = ['حركية', 'بصرية', 'سمعية', 'ذهنية', 'توحد', 'متعددة', 'أخرى']
+const DISABILITY_TYPES = ['حركية', 'بصرية', 'سمعية', 'ذهنية', 'أخرى']
 const MARITAL_STATUSES = ['أعزب', 'متزوج', 'مطلق', 'أرمل']
-const EDUCATION_LEVELS = ['غير متعلم', 'ابتدائي', 'متوسط', 'ثانوي', 'جامعي', 'دراسات عليا']
+const EDUCATION_LEVELS = ['بدون مؤهل', 'ابتدائي', 'إعدادي', 'ثانوي', 'جامعي']
 const EMPLOYMENT_STATUSES = ['يعمل', 'لا يعمل']
 const YES_NO_OPTIONS = [
   { value: 'نعم', color: 'from-emerald-500/20 to-emerald-600/10 border-emerald-500/40 text-emerald-300' },
@@ -261,11 +214,11 @@ export default function App() {
 
   const [disabilityForm, setDisabilityForm] = useState({
     recordType: 'disability',
-    full_name: '', gender: '', age: '', marital_status: '', phone: '', residence_area: '',
+    form_number: '', observation_date: new Date().toISOString().split('T')[0],
+    observation_location: '', full_name: '', phone: '', gender: '', age: '', residence_area: '', marital_status: '',
     disability_type: '', disability_degree: '', disability_cause: '',
-    is_permanent: '', uses_wheelchair: '',
     education_level: '', is_studying: '', last_qualification: '',
-    needs: [], other_needs: '', general_notes: '',
+    needs: [], other_needs: '', researcher_notes: '',
   })
 
   const [activeTab, setActiveTab] = useState('tab1')
@@ -299,21 +252,14 @@ export default function App() {
     setArchiveLoading(true)
     try {
       const sb = getSupabase()
-      let data = null
-      if (sb) {
-        try {
-          const q = sb.from('field_inspections').select('*').order('created_at', { ascending: false })
-          const res = await q
-          if (res.error) throw res.error
-          data = res.data
-        } catch (e) {
-          console.warn('Supabase fetch failed, reading from localStorage:', e)
-        }
-      }
-      setReports(data || localDb.getAll().sort((a, b) => new Date(b.created_at) - new Date(a.created_at)))
+      if (!sb) { showToast('Supabase غير مهيأ', 'error'); setReports([]); return }
+      const { data, error } = await sb.from('field_inspections').select('*').order('created_at', { ascending: false })
+      if (error) throw error
+      setReports(data || [])
     } catch (err) {
       console.error('Error fetching reports:', err)
-      showToast('فشل في تحميل التقارير', 'error')
+      showToast('فشل في تحميل التقارير من قاعدة البيانات', 'error')
+      setReports([])
     } finally {
       setArchiveLoading(false)
     }
@@ -345,13 +291,9 @@ export default function App() {
     })
   }
 
-  // eslint-disable-next-line no-unused-vars
-  const calcPercentage = useCallback(() => {
-    return 0
-  }, [])
-
   const handleTabChange = (tab) => {
     setActiveTab(tab)
+    setEditId(null)
   }
 
   const resetForm = () => {
@@ -366,11 +308,11 @@ export default function App() {
     } else {
       setDisabilityForm({
         recordType: 'disability',
-    full_name: '', gender: '', age: '', marital_status: '', phone: '', residence_area: '',
+        form_number: '', observation_date: new Date().toISOString().split('T')[0],
+        observation_location: '', full_name: '', phone: '', gender: '', age: '', residence_area: '', marital_status: '',
         disability_type: '', disability_degree: '', disability_cause: '',
-        is_permanent: '', uses_wheelchair: '',
         education_level: '', is_studying: '', last_qualification: '',
-        needs: [], other_needs: '', general_notes: '',
+        needs: [], other_needs: '', researcher_notes: '',
       })
     }
     setEditId(null)
@@ -380,7 +322,9 @@ export default function App() {
     if (currentForm.recordType === 'mosque') {
       if (!currentForm.visit_date) return 'تاريخ الزيارة مطلوب'
       if (!currentForm.facility_name.trim()) return 'اسم المرفق / المركز مطلوب'
+      if (!currentForm.evaluations.some(ev => ev.status)) return 'يرجى تقييم محور واحد على الأقل'
     } else {
+      if (!currentForm.observation_location.trim()) return 'مكان رصد الحالة مطلوب'
       if (!currentForm.full_name.trim()) return 'الاسم الرباعي مطلوب'
     }
     return null
@@ -396,32 +340,24 @@ export default function App() {
       if (activeTab === 'tab1' && !payload.report_number) {
         payload.report_number = Date.now().toString().slice(-6)
       }
-      const sb = getSupabase()
-      let saved = false
-      if (sb) {
-        try {
-          if (editId) {
-            const { error: updateError } = await sb.from('field_inspections').update(payload).eq('id', editId)
-            if (updateError) throw updateError
-          } else {
-            const { error: insertError } = await sb.from('field_inspections').insert([payload])
-            if (insertError) throw insertError
-          }
-          saved = true
-        } catch (e) {
-          console.warn('Supabase failed, falling back to localStorage:', e)
-        }
+      if (activeTab === 'tab2' && !payload.form_number) {
+        payload.form_number = Date.now().toString().slice(-6)
       }
-      if (!saved) {
-        if (editId) localDb.update(editId, payload)
-        else localDb.insert(payload)
+      const sb = getSupabase()
+      if (!sb) { showToast('Supabase غير مهيأ', 'error'); return }
+      if (editId) {
+        const { error: updateError } = await sb.from('field_inspections').update(payload).eq('id', editId)
+        if (updateError) throw updateError
+      } else {
+        const { error: insertError } = await sb.from('field_inspections').insert([payload])
+        if (insertError) throw insertError
       }
       showToast(editId ? 'تم تحديث التقرير بنجاح' : 'تم حفظ التقرير بنجاح', 'success')
       resetForm()
-      setReports(localDb.getAll().sort((a, b) => new Date(b.created_at) - new Date(a.created_at)))
+      await fetchReports()
     } catch (err) {
       console.error('Error saving report:', err)
-      showToast('فشل في حفظ التقرير', 'error')
+      showToast('فشل في حفظ التقرير - ' + err.message, 'error')
     } finally {
       setSubmitting(false)
     }
@@ -449,16 +385,19 @@ export default function App() {
     } else {
       setDisabilityForm({
         recordType: 'disability',
-        full_name: report.full_name || '', gender: report.gender || '', age: report.age || '',
-        marital_status: report.marital_status || '', phone: report.phone || '',
+        form_number: report.form_number || '',
+        observation_date: report.observation_date || new Date().toISOString().split('T')[0],
+        observation_location: report.observation_location || report.residence_area || '',
+        full_name: report.full_name || '', phone: report.phone || '',
+        gender: report.gender || '', age: report.age || '',
         residence_area: report.residence_area || '',
+        marital_status: report.marital_status || '',
         disability_type: report.disability_type || '', disability_degree: report.disability_degree || '',
         disability_cause: report.disability_cause || '',
-        is_permanent: report.is_permanent || '', uses_wheelchair: report.uses_wheelchair || '',
         education_level: report.education_level || '', is_studying: report.is_studying || '',
         last_qualification: report.last_qualification || '',
         needs: report.needs || [], other_needs: report.other_needs || '',
-        general_notes: report.general_notes || '',
+        researcher_notes: report.researcher_notes || report.general_notes || '',
       })
     }
     setActiveTab(isMosque ? 'tab1' : 'tab2')
@@ -470,22 +409,14 @@ export default function App() {
   const handleDelete = async (id) => {
     try {
       const sb = getSupabase()
-      let deleted = false
-      if (sb) {
-        try {
-          const { error } = await sb.from('field_inspections').delete().eq('id', id)
-          if (error) throw error
-          deleted = true
-        } catch (e) {
-          console.warn('Supabase delete failed, falling back to localStorage:', e)
-        }
-      }
-      if (!deleted) localDb.remove(id)
+      if (!sb) { showToast('Supabase غير مهيأ', 'error'); setConfirmDelete(null); return }
+      const { error } = await sb.from('field_inspections').delete().eq('id', id)
+      if (error) throw error
       showToast('تم حذف التقرير بنجاح', 'success')
-      setReports(localDb.getAll().sort((a, b) => new Date(b.created_at) - new Date(a.created_at)))
+      await fetchReports()
     } catch (err) {
       console.error('Error deleting report:', err)
-      showToast('فشل في حذف التقرير', 'error')
+      showToast('فشل في حذف التقرير - ' + err.message, 'error')
     }
     setConfirmDelete(null)
   }
@@ -527,18 +458,17 @@ export default function App() {
   }
 
   const exportMosquePDF = async () => {
-    const f = mosqueForm
-    if (!f.facility_name.trim()) { showToast('يرجى إدخال اسم المرفق أولاً', 'warning'); return }
+    if (!mosqueForm.facility_name.trim()) { showToast('يرجى إدخال اسم المرفق أولاً', 'warning'); return }
     setPdfExporting(true)
     try {
-      if (!f.report_number) {
+      if (!mosqueForm.report_number) {
         const newNum = Date.now().toString().slice(-6)
         await new Promise(resolve => {
           setMosqueForm(prev => ({ ...prev, report_number: newNum }))
-          setTimeout(resolve, 100)
+          setTimeout(resolve, 150)
         })
       }
-      await capturePdfFromRef(mosquePdfRef, `تقييم_${f.facility_name.replace(/\s+/g, '_')}.pdf`)
+      await capturePdfFromRef(mosquePdfRef, `تقييم_${mosqueForm.facility_name.replace(/\s+/g, '_')}.pdf`)
     } catch (err) {
       console.error('PDF export error:', err)
       showToast('فشل في تصدير PDF - ' + err.message, 'error')
@@ -548,89 +478,17 @@ export default function App() {
   }
 
   const exportDisabilityPDF = async () => {
-    const f = disabilityForm
-    if (!f.full_name.trim()) { showToast('يرجى إدخال الاسم الرباعي أولاً', 'warning'); return }
+    if (!disabilityForm.full_name.trim()) { showToast('يرجى إدخال الاسم الرباعي أولاً', 'warning'); return }
     setPdfExporting(true)
     try {
-      const todayIso = new Date().toISOString().split('T')[0]
-      const reportNum = Date.now().toString().slice(-6)
-      const c = (val) => val && val.trim() ? val : '\u2014'
-      const yn = (v) => v === 'نعم' ? 'نعم' : 'لا'
-      const needsList = f.needs?.length > 0 ? f.needs.join(' - ') : '\u2014'
-      const el = disabilityPdfRef.current
-      if (!el) throw new Error('Template ref not found')
-
-      el.innerHTML = `<div dir="rtl" style="width:794px;min-height:1123px;background:#fff;padding:0;font-family:Cairo,Traditonal Arabic,Arial,sans-serif;color:#111827;">
-<style>
-.a4-page{padding:15mm 18mm;position:relative}
-.page-footer{position:absolute;bottom:10mm;left:18mm;right:18mm;display:flex;justify-content:space-between;font-size:10px;color:#9ca3af;border-top:1px solid #e5e7eb;padding-top:4px;}
-.logo-placeholder{width:55px;height:55px;background:#e5e7eb;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;color:#6b7280;font-weight:700;border:2px solid #d1d5db;}
-@media print{body{background:#fff}}
-</style>
-<div class="a4-page">
-<header style="border-bottom:2px solid #1f2937;padding-bottom:12px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;">
-<div style="display:flex;align-items:center;gap:12px;">
-<div class="logo-placeholder">شعار<br/>الجهة</div>
-<div style="text-align:right;"><h1 style="font-size:20px;font-weight:800;color:#111827;margin:0 0 2px;">استمارة تقييم حالة ذوي الإعاقة</h1><p style="font-size:13px;font-weight:600;color:#374151;margin:0;">قسم الرصد والتقييم الميداني</p></div>
-</div>
-<div style="text-align:left;font-size:11px;font-weight:600;color:#374151;"><div>رقم الاستمارة: <span style="font-family:monospace;">${reportNum}</span></div><div>تاريخ الرصد: <span dir="ltr">${todayIso}</span></div></div>
-</header>
-
-<section style="margin-bottom:18px;">
-<h2 style="font-size:15px;font-weight:700;color:#1f2937;margin:0 0 10px;border-right:4px solid #1f2937;padding-right:8px;">أولاً: البيانات الأساسية والشخصية</h2>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;border:1px solid #d1d5db;padding:12px;background:#f9fafb;font-size:12px;">
-<div style="grid-column:span 2;"><span style="font-weight:700;color:#6b7280;display:block;font-size:11px;">مكان رصد الحالة</span><span style="font-size:14px;font-weight:700;color:#111827;">${f.residence_area || '\u2014'}</span></div>
-<div><span style="font-weight:700;color:#6b7280;display:block;font-size:11px;">الاسم الرباعي</span><span style="font-size:14px;font-weight:700;color:#111827;">${f.full_name}</span></div>
-<div><span style="font-weight:700;color:#6b7280;display:block;font-size:11px;">رقم الهاتف (إن وجد)</span><span style="font-size:14px;font-weight:700;">${f.phone || '\u2014'}</span></div>
-<div><span style="font-weight:700;color:#6b7280;display:block;font-size:11px;">الجنس</span><span style="font-size:14px;font-weight:700;">${f.gender || '\u2014'}</span></div>
-<div><span style="font-weight:700;color:#6b7280;display:block;font-size:11px;">العمر</span><span style="font-size:14px;font-weight:700;">${f.age || '\u2014'}</span></div>
-<div><span style="font-weight:700;color:#6b7280;display:block;font-size:11px;">منطقة السكن</span><span style="font-size:14px;font-weight:700;">${f.residence_area || '\u2014'}</span></div>
-<div><span style="font-weight:700;color:#6b7280;display:block;font-size:11px;">الحالة الاجتماعية</span><span style="font-size:14px;font-weight:700;">${f.marital_status || '\u2014'}</span></div>
-</div>
-</section>
-
-<section style="margin-bottom:18px;">
-<h2 style="font-size:15px;font-weight:700;color:#1f2937;margin:0 0 10px;border-right:4px solid #1f2937;padding-right:8px;">ثانياً: بيانات الإعاقة</h2>
-<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;border:1px solid #d1d5db;padding:12px;background:#f9fafb;font-size:12px;">
-<div><span style="font-weight:700;color:#6b7280;display:block;font-size:11px;">نوع الإعاقة</span><span style="font-size:14px;font-weight:700;color:#111827;">${f.disability_type || '\u2014'}</span></div>
-<div><span style="font-weight:700;color:#6b7280;display:block;font-size:11px;">درجة الإعاقة</span><span style="font-size:14px;font-weight:700;">${f.disability_degree || '\u2014'}</span></div>
-<div><span style="font-weight:700;color:#6b7280;display:block;font-size:11px;">سبب الإعاقة</span><span style="font-size:14px;font-weight:700;">${c(f.disability_cause)}</span></div>
-</div>
-</section>
-
-<section style="margin-bottom:18px;">
-<h2 style="font-size:15px;font-weight:700;color:#1f2937;margin:0 0 10px;border-right:4px solid #1f2937;padding-right:8px;">ثالثاً: الحالة التعليمية</h2>
-<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;border:1px solid #d1d5db;padding:12px;background:#f9fafb;font-size:12px;">
-<div><span style="font-weight:700;color:#6b7280;display:block;font-size:11px;">المستوى التعليمي</span><span style="font-size:14px;font-weight:700;color:#111827;">${f.education_level || '\u2014'}</span></div>
-<div><span style="font-weight:700;color:#6b7280;display:block;font-size:11px;">هل يدرس حالياً؟</span><span style="font-size:14px;font-weight:700;">${yn(f.is_studying)}</span></div>
-<div><span style="font-weight:700;color:#6b7280;display:block;font-size:11px;">آخر مؤهل دراسي</span><span style="font-size:14px;font-weight:700;">${c(f.last_qualification)}</span></div>
-</div>
-</section>
-
-<section style="margin-bottom:18px;">
-<h2 style="font-size:15px;font-weight:700;color:#1f2937;margin:0 0 10px;border-right:4px solid #1f2937;padding-right:8px;">رابعاً: الاحتياجات والمتطلبات</h2>
-<div style="border:1px solid #d1d5db;padding:12px;background:#f9fafb;font-size:12px;">
-<div style="margin-bottom:8px;"><span style="font-weight:700;color:#6b7280;display:block;font-size:11px;margin-bottom:6px;">الاحتياجات الأساسية:</span><div style="display:flex;flex-wrap:wrap;gap:4px;">${needsList}</div></div>
-<div style="border-top:1px solid #d1d5db;padding-top:8px;margin-top:8px;"><span style="font-weight:700;color:#6b7280;display:block;font-size:11px;">احتياجات أخرى (اذكرها)</span><span style="font-size:14px;font-weight:700;">${c(f.other_needs)}</span></div>
-</div>
-</section>
-
-<section style="margin-bottom:18px;">
-<h2 style="font-size:15px;font-weight:700;color:#1f2937;margin:0 0 10px;border-right:4px solid #1f2937;padding-right:8px;">خامساً: الملاحظات العامة</h2>
-<div style="border:1px solid #d1d5db;padding:12px;background:#f9fafb;min-height:40px;">
-<div style="font-size:12px;color:#4b5563;line-height:1.6;">${c(f.general_notes)}</div>
-</div>
-</section>
-
-<section style="margin-top:40px;display:flex;justify-content:space-between;text-align:center;">
-<div style="width:45%;"><p style="font-weight:700;color:#1f2937;margin-bottom:18px;">مُعِد الاستمارة / الباحث</p><p style="border-top:1px solid #9ca3af;padding-top:6px;font-size:11px;color:#4b5563;">الاسم: _______________ التوقيع: _______________</p><p style="font-size:10px;color:#9ca3af;margin-top:4px;">التاريخ: _______________</p></div>
-<div style="width:45%;"><p style="font-weight:700;color:#1f2937;margin-bottom:18px;">الاعتماد والمصادقة</p><p style="border-top:1px solid #9ca3af;padding-top:6px;font-size:11px;color:#4b5563;">الاسم: _______________ التوقيع: _______________</p><p style="font-size:10px;color:#9ca3af;margin-top:4px;">التاريخ: _______________ الختم: _______________</p></div>
-</section>
-
-<div class="page-footer"><span>قسم ذوي الإعاقة والاحتياجات الخاصة</span><span>صفحة 1 من 1</span></div>
-</div></div>`
-
-      await capturePdfFromRef(disabilityPdfRef, `تقييم_حالة_${f.full_name.replace(/\s+/g, '_')}.pdf`)
+      if (!disabilityForm.form_number) {
+        const newNum = Date.now().toString().slice(-6)
+        await new Promise(resolve => {
+          setDisabilityForm(prev => ({ ...prev, form_number: newNum }))
+          setTimeout(resolve, 150)
+        })
+      }
+      await capturePdfFromRef(disabilityPdfRef, `تقييم_حالة_${disabilityForm.full_name.replace(/\s+/g, '_')}.pdf`)
     } catch (err) {
       console.error('PDF export error:', err)
       showToast('فشل في تصدير PDF - ' + err.message, 'error')
@@ -665,7 +523,7 @@ export default function App() {
         const c2 = (val) => val && val.trim() ? val : '\u2014'
         const positives = report.positives || report.general_notes || ''
         const negatives = report.negatives || ''
-        el.innerHTML = `<div dir="rtl" style="width:794px;min-height:1123px;background:#fff;padding:0;font-family:Cairo,Traditonal Arabic,Arial,sans-serif;color:#111827;">
+        el.innerHTML = `<div dir="rtl" style="width:794px;min-height:1123px;background:#fff;padding:0;font-family:Cairo,Traditional Arabic,Arial,sans-serif;color:#111827;">
 <style>
 .a4-page{padding:15mm 18mm;position:relative}
 .page-footer{position:absolute;bottom:10mm;left:18mm;right:18mm;display:flex;justify-content:space-between;font-size:10px;color:#9ca3af;border-top:1px solid #e5e7eb;padding-top:4px;}
@@ -717,27 +575,29 @@ export default function App() {
 <div class="page-footer"><span>قسم ذوي الإعاقة والاحتياجات الخاصة</span><span>صفحة 1 من 1</span></div>
 </div></div>`
       } else {
-        const needsList = report.needs?.length > 0 ? report.needs.join(' - ') : '\u2014'
+        const needsList = report.needs?.length > 0 ? report.needs.map(n => `<span style="background:#dcfce7;color:#166534;border:1px solid #bbf7d0;font-weight:700;padding:2px 8px;border-radius:2px;font-size:10px;">${n}</span>`).join(' ') : '\u2014'
         const c2 = (val) => val && val.trim() ? val : '\u2014'
-        el.innerHTML = `<div dir="rtl" style="width:794px;min-height:1123px;background:#fff;padding:0;font-family:Cairo,Traditonal Arabic,Arial,sans-serif;color:#111827;">
+        const obsLoc = report.observation_location || report.residence_area || ''
+        const resNotes = report.researcher_notes || report.general_notes || ''
+        el.innerHTML = `<div dir="rtl" style="width:794px;min-height:1123px;background:#fff;padding:0;font-family:Cairo,Traditional Arabic,Arial,sans-serif;color:#111827;">
 <style>
 .a4-page{padding:15mm 18mm;position:relative}
 .page-footer{position:absolute;bottom:10mm;left:18mm;right:18mm;display:flex;justify-content:space-between;font-size:10px;color:#9ca3af;border-top:1px solid #e5e7eb;padding-top:4px;}
 @media print{body{background:#fff}}
 </style>
 <div class="a4-page">
-<header style="border-bottom:2px solid #1f2937;padding-bottom:12px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;">
-<div style="display:flex;align-items:center;gap:12px;">
-<div style="width:60px;height:60px;background:#e5e7eb;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;color:#6b7280;font-weight:700;border:2px solid #d1d5db;">شعار<br/>الجهة</div>
-<div style="text-align:right;"><h1 style="font-size:22px;font-weight:800;color:#111827;margin:0 0 4px;">استمارة تقييم حالة ذوي الإعاقة</h1><p style="font-size:14px;font-weight:600;color:#374151;margin:0;">قسم الرصد والتقييم الميداني</p></div>
+<header style="border-bottom:2px solid #1f2937;padding-bottom:12px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:flex-end;">
+<div style="text-align:right;">
+<h1 style="font-size:20px;font-weight:800;color:#111827;margin:0 0 2px;">استمارة تقييم حالة ذوي الإعاقة</h1>
+<p style="font-size:13px;font-weight:600;color:#374151;margin:0;">قسم الرصد والتقييم الميداني</p>
 </div>
-<div style="text-align:left;font-size:11px;font-weight:600;color:#374151;"><div>رقم الاستمارة: <span style="font-family:monospace;">${reportNum}</span></div><div>تاريخ الرصد: <span dir="ltr">${todayIso}</span></div></div>
+<div style="text-align:left;font-size:11px;font-weight:600;color:#374151;"><div>رقم الاستمارة: <span style="font-family:monospace;">${reportNum}</span></div><div>تاريخ الرصد: <span dir="ltr">${report.observation_date || todayIso}</span></div></div>
 </header>
 
 <section style="margin-bottom:14px;">
 <h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">أولاً: البيانات الأساسية والشخصية</h2>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;border:1px solid #d1d5db;padding:10px;background:#f9fafb;font-size:11px;">
-<div style="grid-column:span 2;"><span style="font-weight:700;color:#6b7280;display:block;font-size:10px;">مكان رصد الحالة</span><span style="font-size:13px;font-weight:700;">${report.residence_area || '\u2014'}</span></div>
+<div style="grid-column:span 2;"><span style="font-weight:700;color:#6b7280;display:block;font-size:10px;">مكان رصد الحالة</span><span style="font-size:13px;font-weight:700;">${c2(obsLoc)}</span></div>
 <div style="grid-column:span 2;"><span style="font-weight:700;color:#6b7280;display:block;font-size:10px;">الاسم الرباعي</span><span style="font-size:13px;font-weight:700;">${report.full_name || '\u2014'}</span></div>
 <div><span style="font-weight:700;color:#6b7280;display:block;font-size:10px;">الجنس</span>${report.gender || '\u2014'}</div>
 <div><span style="font-weight:700;color:#6b7280;display:block;font-size:10px;">العمر</span>${report.age || '\u2014'}</div>
@@ -753,47 +613,35 @@ export default function App() {
 <div><span style="font-weight:700;color:#6b7280;display:block;font-size:10px;">نوع الإعاقة</span>${c2(report.disability_type)}</div>
 <div><span style="font-weight:700;color:#6b7280;display:block;font-size:10px;">درجة الإعاقة</span>${c2(report.disability_degree)}</div>
 <div><span style="font-weight:700;color:#6b7280;display:block;font-size:10px;">سبب الإعاقة</span>${c2(report.disability_cause)}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;font-size:10px;">إعاقة دائمة؟</span>${report.is_permanent === 'نعم' ? 'نعم' : 'لا'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;font-size:10px;">يستخدم كرسي متحرك؟</span>${report.uses_wheelchair === 'نعم' ? 'نعم' : 'لا'}</div>
 </div>
 </section>
 
 <section style="margin-bottom:14px;">
-<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">ثالثاً: المعلومات الطبية والصحية</h2>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;border:1px solid #d1d5db;padding:10px;background:#f9fafb;font-size:11px;">
-<div><span style="font-weight:700;color:#6b7280;display:block;font-size:10px;">الأمراض المزمنة</span>${c2(report.chronic_diseases)}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;font-size:10px;">الأدوية المستخدمة</span>${c2(report.medications)}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;font-size:10px;">القدرة على الحركة</span>${c2(report.mobility)}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;font-size:10px;">ملاحظات صحية</span>${c2(report.health_notes)}</div>
-</div>
-</section>
-
-<section style="margin-bottom:14px;">
-<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">رابعاً: المستوى التعليمي والمهني</h2>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;border:1px solid #d1d5db;padding:10px;background:#f9fafb;font-size:11px;">
+<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">ثالثاً: الحالة التعليمية</h2>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;border:1px solid #d1d5db;padding:10px;background:#f9fafb;font-size:11px;">
 <div><span style="font-weight:700;color:#6b7280;display:block;font-size:10px;">المستوى التعليمي</span>${c2(report.education_level)}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;font-size:10px;">يدرس حالياً؟</span>${report.is_studying === 'نعم' ? 'نعم' : 'لا'}</div>
-<div style="grid-column:span 2;"><span style="font-weight:700;color:#6b7280;display:block;font-size:10px;">آخر مؤهل دراسي</span>${c2(report.last_qualification)}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;font-size:10px;">يدرس حالياً؟</span>${report.is_studying || '\u2014'}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;font-size:10px;">آخر مؤهل دراسي</span>${c2(report.last_qualification)}</div>
 </div>
 </section>
 
 <section style="margin-bottom:14px;">
-<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">خامساً: الاحتياجات والخدمات المطلوبة</h2>
+<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">رابعاً: الاحتياجات والمتطلبات</h2>
 <div style="border:1px solid #d1d5db;padding:10px;background:#f9fafb;font-size:11px;">
-<div style="margin-bottom:6px;"><span style="font-weight:700;color:#6b7280;display:block;font-size:10px;">الاحتياجات</span>${needsList}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;font-size:10px;">احتياجات أخرى</span>${c2(report.other_needs)}</div>
+<div style="margin-bottom:6px;"><span style="font-weight:700;color:#6b7280;display:block;font-size:10px;">الاحتياجات الأساسية:</span><div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;">${needsList}</div></div>
+<div style="border-top:1px solid #d1d5db;padding-top:8px;margin-top:8px;"><span style="font-weight:700;color:#6b7280;display:block;font-size:10px;">احتياجات أخرى</span>${c2(report.other_needs)}</div>
 </div>
 </section>
 
 <section style="margin-bottom:14px;">
-<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">سادساً: التوصيات والملاحظات</h2>
+<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">خامساً: الملاحظات العامة</h2>
 <div style="border:1px solid #d1d5db;padding:10px;background:#f9fafb;font-size:11px;min-height:40px;">
-${c2(report.general_notes)}
+${c2(resNotes)}
 </div>
 </section>
 
 <section style="margin-top:30px;display:flex;justify-content:space-between;text-align:center;">
-<div style="width:45%;"><p style="font-weight:700;color:#1f2937;margin-bottom:20px;">المُقيم / الباحث</p><p style="border-top:1px solid #9ca3af;padding-top:6px;font-size:11px;color:#4b5563;">الاسم: _______________ التوقيع: _______________</p><p style="font-size:10px;color:#9ca3af;margin-top:4px;">التاريخ: _______________</p></div>
+<div style="width:45%;"><p style="font-weight:700;color:#1f2937;margin-bottom:20px;">مُعِد الاستمارة / الباحث</p><p style="border-top:1px solid #9ca3af;padding-top:6px;font-size:11px;color:#4b5563;">الاسم: _______________ التوقيع: _______________</p><p style="font-size:10px;color:#9ca3af;margin-top:4px;">التاريخ: _______________</p></div>
 <div style="width:45%;"><p style="font-weight:700;color:#1f2937;margin-bottom:20px;">الاعتماد والمصادقة</p><p style="border-top:1px solid #9ca3af;padding-top:6px;font-size:11px;color:#4b5563;">الاسم: _______________ التوقيع: _______________</p><p style="font-size:10px;color:#9ca3af;margin-top:4px;">التاريخ: _______________ الختم: _______________</p></div>
 </section>
 
@@ -825,7 +673,7 @@ ${c2(report.general_notes)}
     if (diffDays > 30) { showToast('مدة التقرير يجب ألا تزيد عن 30 يوماً', 'error'); return }
 
     const filtered = reports.filter(r => {
-      const dateStr = r.visit_date || r.created_at
+      const dateStr = r.observation_date || r.visit_date || r.created_at
       if (!dateStr) return false
       const d = new Date(dateStr)
       return d >= start && d <= end
@@ -895,7 +743,7 @@ ${c2(report.general_notes)}
         `<div style="display:table-row;" class="list-item"><div style="display:table-cell;font-weight:700;color:#4b5563;padding:2px 0;">${t}</div><div style="display:table-cell;text-align:center;font-weight:700;width:30%;">${n} طلباً</div></div>`
       ).join('') || '<div style="padding:4px;color:#9ca3af;">لا توجد بيانات</div>'
 
-      el.innerHTML = `<div dir="rtl" style="width:794px;min-height:1123px;background:#fff;padding:0;font-family:Cairo,Traditonal Arabic,Arial,sans-serif;color:#111827;">
+      el.innerHTML = `<div dir="rtl" style="width:794px;min-height:1123px;background:#fff;padding:0;font-family:Cairo,Traditional Arabic,Arial,sans-serif;color:#111827;">
 <style>
 .a4-page{padding:15mm 18mm;position:relative}
 .page-footer{position:absolute;bottom:10mm;left:18mm;right:18mm;display:flex;justify-content:space-between;font-size:10px;color:#9ca3af;border-top:1px solid #e5e7eb;padding-top:4px;}
@@ -1294,15 +1142,34 @@ ${c2(report.general_notes)}
         {/* ============ TAB 2: DISABILITY ============ */}
         {activeTab === 'tab2' && (<>
 
+        {/* Header: form_number + observation_date */}
+        <GlassCard className="mb-6">
+          <div className="px-6 sm:px-10 py-6 sm:py-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 border border-cyan-500/30"><FileText className="w-4 h-4 text-cyan-400" /></div>
+              <h2 className="text-xl font-bold text-white">استمارة تقييم حالة ذوي الإعاقة</h2>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <GlassInput label="رقم الاستمارة" icon={FileText} value={currentForm.form_number} onChange={(e) => handleChange('form_number', e.target.value)} placeholder="يُولد تلقائياً" />
+              <GlassInput label="تاريخ الرصد" icon={Calendar}>
+                <input type="date" value={currentForm.observation_date} onChange={(e) => handleChange('observation_date', e.target.value)}
+                  className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-gray-300 outline-none transition-all duration-300 focus:border-cyan-500/50 focus:bg-white/[0.06] [&::-webkit-calendar-picker-indicator]:filter [&::-webkit-calendar-picker-indicator]:invert-[0.7]" />
+              </GlassInput>
+            </div>
+          </div>
+        </GlassCard>
+
         {/* 1. Personal Data */}
         <GlassCard className="mb-6">
           <div className="px-6 sm:px-10 py-6 sm:py-8">
             <div className="flex items-center gap-3 mb-6">
               <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 border border-cyan-500/30"><Users className="w-4 h-4 text-cyan-400" /></div>
-              <h2 className="text-xl font-bold text-white">أولاً: البيانات الشخصية</h2>
+              <h2 className="text-xl font-bold text-white">أولاً: البيانات الأساسية والشخصية</h2>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              <GlassInput label="مكان رصد الحالة" icon={MapPin} required value={currentForm.observation_location} onChange={(e) => handleChange('observation_location', e.target.value)} placeholder="أدخل مكان رصد الحالة بدقة..." />
               <GlassInput label="الاسم الرباعي" icon={Users} required value={currentForm.full_name} onChange={(e) => handleChange('full_name', e.target.value)} placeholder="الاسم الرباعي" />
+              <GlassInput label="رقم الهاتف (إن وجد)" icon={ListChecks} type="tel" value={currentForm.phone} onChange={(e) => handleChange('phone', e.target.value)} placeholder="رقم الهاتف" />
               <GlassInput label="الجنس" icon={Users}>
                 <select value={currentForm.gender} onChange={(e) => handleChange('gender', e.target.value)}
                   className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-gray-300 outline-none transition-all appearance-none cursor-pointer focus:border-cyan-500/50 focus:bg-white/[0.06]">
@@ -1312,7 +1179,7 @@ ${c2(report.general_notes)}
                 </select>
               </GlassInput>
               <GlassInput label="العمر" icon={Clock} type="number" value={currentForm.age} onChange={(e) => handleChange('age', e.target.value)} placeholder="العمر" />
-              <GlassInput label="رقم الهاتف (إن وجد)" icon={ListChecks} type="tel" value={currentForm.phone} onChange={(e) => handleChange('phone', e.target.value)} placeholder="رقم الهاتف" />
+              <GlassInput label="منطقة السكن" icon={MapPin} value={currentForm.residence_area} onChange={(e) => handleChange('residence_area', e.target.value)} placeholder="منطقة السكن" />
               <GlassInput label="الحالة الاجتماعية" icon={Users}>
                 <select value={currentForm.marital_status} onChange={(e) => handleChange('marital_status', e.target.value)}
                   className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-gray-300 outline-none transition-all appearance-none cursor-pointer focus:border-cyan-500/50 focus:bg-white/[0.06]">
@@ -1320,7 +1187,6 @@ ${c2(report.general_notes)}
                   {MARITAL_STATUSES.map(s => <option key={s} value={s} className="bg-[#0B0F19]">{s}</option>)}
                 </select>
               </GlassInput>
-              <GlassInput label="منطقة السكن" icon={MapPin} value={currentForm.residence_area} onChange={(e) => handleChange('residence_area', e.target.value)} placeholder="منطقة السكن" />
             </div>
           </div>
         </GlassCard>
@@ -1340,16 +1206,8 @@ ${c2(report.general_notes)}
                   {DISABILITY_TYPES.map(t => <option key={t} value={t} className="bg-[#0B0F19]">{t}</option>)}
                 </select>
               </GlassInput>
-              <GlassInput label="درجة الإعاقة" icon={ListChecks} value={currentForm.disability_degree} onChange={(e) => handleChange('disability_degree', e.target.value)} placeholder="درجة الإعاقة" />
-              <GlassInput label="سبب الإعاقة" icon={FileText} value={currentForm.disability_cause} onChange={(e) => handleChange('disability_cause', e.target.value)} placeholder="سبب الإعاقة" />
-              <div>
-                <label className="block text-sm text-gray-400 font-medium mb-2">هل الإعاقة دائمة؟</label>
-                <SegmentedControl options={YES_NO_OPTIONS} value={currentForm.is_permanent} onChange={(v) => handleChange('is_permanent', v)} />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-400 font-medium mb-2">يستخدم كرسياً متحركاً؟</label>
-                <SegmentedControl options={YES_NO_OPTIONS} value={currentForm.uses_wheelchair} onChange={(v) => handleChange('uses_wheelchair', v)} />
-              </div>
+              <GlassInput label="درجة الإعاقة" icon={ListChecks} value={currentForm.disability_degree} onChange={(e) => handleChange('disability_degree', e.target.value)} placeholder="بسيطة / متوسطة / شديدة" />
+              <GlassInput label="سبب الإعاقة" icon={FileText} value={currentForm.disability_cause} onChange={(e) => handleChange('disability_cause', e.target.value)} placeholder="ولادي / حادث / مرضي..." />
             </div>
           </div>
         </GlassCard>
@@ -1378,37 +1236,36 @@ ${c2(report.general_notes)}
           </div>
         </GlassCard>
 
-
-
-        {/* 5. Needs */}
+        {/* 4. Needs */}
         <GlassCard className="mb-6">
           <div className="px-6 sm:px-10 py-6 sm:py-8">
             <div className="flex items-center gap-3 mb-6">
               <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 border border-cyan-500/30"><ListChecks className="w-4 h-4 text-cyan-400" /></div>
-              <h2 className="text-xl font-bold text-white">رابعاً: الاحتياجات</h2>
+              <h2 className="text-xl font-bold text-white">رابعاً: الاحتياجات والمتطلبات</h2>
             </div>
-            <div className="flex flex-wrap gap-3 mb-4">
+            <p className="text-sm text-gray-500 mb-4">يرجى تحديد الاحتياجات الأساسية (يمكن اختيار أكثر من واحدة):</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-4">
               {NEED_OPTIONS.map((need) => (
                 <button key={need} type="button" onClick={() => handleNeedToggle(need)}
-                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 border
+                  className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 border text-center
                     ${currentForm.needs.includes(need)
                       ? 'bg-cyan-500/20 border-cyan-500/40 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.15)]'
                       : 'bg-white/[0.03] border-white/[0.06] text-gray-400 hover:text-white hover:bg-white/[0.06]'
                     }`}>{need}</button>
               ))}
             </div>
-            <GlassTextarea label="احتياجات أخرى" icon={FileText} value={currentForm.other_needs} onChange={(e) => handleChange('other_needs', e.target.value)} placeholder="احتياجات أخرى..." />
+            <GlassInput label="احتياجات أخرى (اذكرها)" icon={FileText} value={currentForm.other_needs} onChange={(e) => handleChange('other_needs', e.target.value)} placeholder="اذكر احتياجات أخرى..." />
           </div>
         </GlassCard>
 
-        {/* 6. General Notes */}
+        {/* 5. Researcher Notes */}
         <GlassCard className="mb-6">
           <div className="px-6 sm:px-10 py-6 sm:py-8">
             <div className="flex items-center gap-3 mb-6">
               <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 border border-cyan-500/30"><FileText className="w-4 h-4 text-cyan-400" /></div>
               <h2 className="text-xl font-bold text-white">خامساً: الملاحظات العامة</h2>
             </div>
-            <GlassTextarea label="الملاحظات العامة" icon={FileText} value={currentForm.general_notes} onChange={(e) => handleChange('general_notes', e.target.value)} placeholder="أكتب الملاحظات العامة هنا..." />
+            <GlassTextarea label="ملاحظات ورأي الباحث/المفتش" icon={ClipboardCheck} value={currentForm.researcher_notes} onChange={(e) => handleChange('researcher_notes', e.target.value)} placeholder="أدخل الملاحظات العامة والتوصيات هنا..." />
           </div>
         </GlassCard>
 
@@ -1634,6 +1491,9 @@ ${c2(report.general_notes)}
               ) : (
                 <div className="space-y-5">
                   <div className="grid grid-cols-2 gap-4">
+                    <div><span className="text-xs text-gray-500 block">رقم الاستمارة</span><span className="text-white font-medium">{viewReport.form_number || '—'}</span></div>
+                    <div><span className="text-xs text-gray-500 block">تاريخ الرصد</span><span className="text-white font-medium">{formatDate(viewReport.observation_date)}</span></div>
+                    <div><span className="text-xs text-gray-500 block">مكان رصد الحالة</span><span className="text-white font-medium">{viewReport.observation_location || viewReport.residence_area || '—'}</span></div>
                     <div><span className="text-xs text-gray-500 block">الاسم الرباعي</span><span className="text-white font-medium">{viewReport.full_name || '—'}</span></div>
                     <div><span className="text-xs text-gray-500 block">الجنس</span><span className="text-white font-medium">{viewReport.gender || '—'}</span></div>
                     <div><span className="text-xs text-gray-500 block">العمر</span><span className="text-white font-medium">{viewReport.age || '—'}</span></div>
@@ -1642,12 +1502,13 @@ ${c2(report.general_notes)}
                     <div><span className="text-xs text-gray-500 block">منطقة السكن</span><span className="text-white font-medium">{viewReport.residence_area || '—'}</span></div>
                     <div><span className="text-xs text-gray-500 block">نوع الإعاقة</span><span className="text-white font-medium">{viewReport.disability_type || '—'}</span></div>
                     <div><span className="text-xs text-gray-500 block">درجة الإعاقة</span><span className="text-white font-medium">{viewReport.disability_degree || '—'}</span></div>
+                    <div><span className="text-xs text-gray-500 block">سبب الإعاقة</span><span className="text-white font-medium">{viewReport.disability_cause || '—'}</span></div>
                     <div><span className="text-xs text-gray-500 block">المستوى التعليمي</span><span className="text-white font-medium">{viewReport.education_level || '—'}</span></div>
-                    <div><span className="text-xs text-gray-500 block">إعاقة دائمة؟</span><span className="text-white font-medium">{viewReport.is_permanent === 'نعم' ? 'نعم' : 'لا'}</span></div>
-                    <div><span className="text-xs text-gray-500 block">كرسي متحرك؟</span><span className="text-white font-medium">{viewReport.uses_wheelchair === 'نعم' ? 'نعم' : 'لا'}</span></div>
+                    <div><span className="text-xs text-gray-500 block">يدرس حالياً؟</span><span className="text-white font-medium">{viewReport.is_studying || '—'}</span></div>
+                    <div><span className="text-xs text-gray-500 block">آخر مؤهل دراسي</span><span className="text-white font-medium">{viewReport.last_qualification || '—'}</span></div>
                   </div>
-                  {viewReport.general_notes && (
-                    <div><span className="text-xs text-gray-500 block mb-1">الملاحظات العامة</span><p className="text-white/80 text-sm bg-white/[0.02] rounded-xl p-3 border border-white/[0.04]">{viewReport.general_notes}</p></div>
+                  {(viewReport.researcher_notes || viewReport.general_notes) && (
+                    <div><span className="text-xs text-gray-500 block mb-1">ملاحظات الباحث</span><p className="text-white/80 text-sm bg-white/[0.02] rounded-xl p-3 border border-white/[0.04]">{viewReport.researcher_notes || viewReport.general_notes}</p></div>
                   )}
                   {viewReport.needs?.length > 0 && (
                     <div><span className="text-xs text-gray-500 block mb-1">الاحتياجات</span><div className="flex flex-wrap gap-2">{viewReport.needs.map((n, i) => <span key={i} className="text-xs text-cyan-400 bg-cyan-500/10 px-2 py-1 rounded-lg">{n}</span>)}</div></div>
@@ -1774,8 +1635,147 @@ ${c2(report.general_notes)}
           </div>
         </div>
       </div>
+
+      {/* Hidden PDF Template — Disability (React JSX version of official HTML) */}
       <div ref={disabilityPdfRef}
-        style={{ position: 'absolute', left: '-9999px', top: '0', width: '794px', overflow: 'hidden', zIndex: -1 }} />
+        style={{ position: 'absolute', left: '-9999px', top: '0', width: '794px', overflow: 'hidden', zIndex: -1 }}>
+        <div dir="rtl" style={{ width: '794px', minHeight: '1123px', background: '#ffffff', padding: 0, fontFamily: 'Cairo, Traditional Arabic, Arial, sans-serif', color: '#111827' }}>
+          <style>{`
+            .a4-page{padding:15mm 18mm;position:relative}
+            .page-footer{position:absolute;bottom:10mm;left:18mm;right:18mm;display:flex;justify-content:space-between;font-size:10px;color:#9ca3af;border-top:1px solid #e5e7eb;padding-top:4px;}
+          `}</style>
+          <div className="a4-page">
+            <header style={{ borderBottom: '2px solid #1f2937', paddingBottom: '12px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+              <div style={{ textAlign: 'right' }}>
+                <h1 style={{ fontSize: '20px', fontWeight: 800, color: '#111827', margin: '0 0 2px' }}>استمارة تقييم حالة ذوي الإعاقة</h1>
+                <p style={{ fontSize: '13px', fontWeight: 600, color: '#374151', margin: 0 }}>قسم الرصد والتقييم الميداني</p>
+              </div>
+              <div style={{ textAlign: 'left', fontSize: '11px', fontWeight: 600, color: '#374151' }}>
+                <div>رقم الاستمارة: <span style={{ fontFamily: 'monospace' }}>{disabilityForm.form_number || '———'}</span></div>
+                <div>تاريخ الرصد: <span dir="ltr">{disabilityForm.observation_date || new Date().toISOString().split('T')[0]}</span></div>
+              </div>
+            </header>
+
+            <section style={{ marginBottom: '18px' }}>
+              <h2 style={{ fontSize: '15px', fontWeight: 700, color: '#1f2937', margin: '0 0 10px', borderRight: '4px solid #1f2937', paddingRight: '8px' }}>أولاً: البيانات الأساسية والشخصية</h2>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', border: '1px solid #d1d5db', padding: '12px', background: '#f9fafb', fontSize: '12px' }}>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <span style={{ fontWeight: 700, color: '#6b7280', display: 'block', fontSize: '11px' }}>مكان رصد الحالة</span>
+                  <span style={{ fontSize: '14px', fontWeight: 700, color: '#111827' }}>{disabilityForm.observation_location || '\u2014'}</span>
+                </div>
+                <div>
+                  <span style={{ fontWeight: 700, color: '#6b7280', display: 'block', fontSize: '11px' }}>الاسم الرباعي</span>
+                  <span style={{ fontSize: '14px', fontWeight: 700, color: '#111827' }}>{disabilityForm.full_name || '\u2014'}</span>
+                </div>
+                <div>
+                  <span style={{ fontWeight: 700, color: '#6b7280', display: 'block', fontSize: '11px' }}>رقم الهاتف (إن وجد)</span>
+                  <span style={{ fontSize: '14px', fontWeight: 700 }}>{disabilityForm.phone || '\u2014'}</span>
+                </div>
+                <div>
+                  <span style={{ fontWeight: 700, color: '#6b7280', display: 'block', fontSize: '11px' }}>الجنس</span>
+                  <span style={{ fontSize: '14px', fontWeight: 700 }}>{disabilityForm.gender || '\u2014'}</span>
+                </div>
+                <div>
+                  <span style={{ fontWeight: 700, color: '#6b7280', display: 'block', fontSize: '11px' }}>العمر</span>
+                  <span style={{ fontSize: '14px', fontWeight: 700 }}>{disabilityForm.age || '\u2014'}</span>
+                </div>
+                <div>
+                  <span style={{ fontWeight: 700, color: '#6b7280', display: 'block', fontSize: '11px' }}>منطقة السكن</span>
+                  <span style={{ fontSize: '14px', fontWeight: 700 }}>{disabilityForm.residence_area || '\u2014'}</span>
+                </div>
+                <div>
+                  <span style={{ fontWeight: 700, color: '#6b7280', display: 'block', fontSize: '11px' }}>الحالة الاجتماعية</span>
+                  <span style={{ fontSize: '14px', fontWeight: 700 }}>{disabilityForm.marital_status || '\u2014'}</span>
+                </div>
+              </div>
+            </section>
+
+            <section style={{ marginBottom: '18px' }}>
+              <h2 style={{ fontSize: '15px', fontWeight: 700, color: '#1f2937', margin: '0 0 10px', borderRight: '4px solid #1f2937', paddingRight: '8px' }}>ثانياً: بيانات الإعاقة</h2>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', border: '1px solid #d1d5db', padding: '12px', background: '#f9fafb', fontSize: '12px' }}>
+                <div>
+                  <span style={{ fontWeight: 700, color: '#6b7280', display: 'block', fontSize: '11px' }}>نوع الإعاقة</span>
+                  <span style={{ fontSize: '14px', fontWeight: 700, color: '#111827' }}>{disabilityForm.disability_type || '\u2014'}</span>
+                </div>
+                <div>
+                  <span style={{ fontWeight: 700, color: '#6b7280', display: 'block', fontSize: '11px' }}>درجة الإعاقة</span>
+                  <span style={{ fontSize: '14px', fontWeight: 700 }}>{disabilityForm.disability_degree || '\u2014'}</span>
+                </div>
+                <div>
+                  <span style={{ fontWeight: 700, color: '#6b7280', display: 'block', fontSize: '11px' }}>سبب الإعاقة</span>
+                  <span style={{ fontSize: '14px', fontWeight: 700 }}>{disabilityForm.disability_cause || '\u2014'}</span>
+                </div>
+              </div>
+            </section>
+
+            <section style={{ marginBottom: '18px' }}>
+              <h2 style={{ fontSize: '15px', fontWeight: 700, color: '#1f2937', margin: '0 0 10px', borderRight: '4px solid #1f2937', paddingRight: '8px' }}>ثالثاً: الحالة التعليمية</h2>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', border: '1px solid #d1d5db', padding: '12px', background: '#f9fafb', fontSize: '12px' }}>
+                <div>
+                  <span style={{ fontWeight: 700, color: '#6b7280', display: 'block', fontSize: '11px' }}>المستوى التعليمي</span>
+                  <span style={{ fontSize: '14px', fontWeight: 700, color: '#111827' }}>{disabilityForm.education_level || '\u2014'}</span>
+                </div>
+                <div>
+                  <span style={{ fontWeight: 700, color: '#6b7280', display: 'block', fontSize: '11px' }}>هل يدرس حالياً؟</span>
+                  <span style={{ fontSize: '14px', fontWeight: 700 }}>{disabilityForm.is_studying || '\u2014'}</span>
+                </div>
+                <div>
+                  <span style={{ fontWeight: 700, color: '#6b7280', display: 'block', fontSize: '11px' }}>آخر مؤهل دراسي</span>
+                  <span style={{ fontSize: '14px', fontWeight: 700 }}>{disabilityForm.last_qualification || '\u2014'}</span>
+                </div>
+              </div>
+            </section>
+
+            <section style={{ marginBottom: '18px' }}>
+              <h2 style={{ fontSize: '15px', fontWeight: 700, color: '#1f2937', margin: '0 0 10px', borderRight: '4px solid #1f2937', paddingRight: '8px' }}>رابعاً: الاحتياجات والمتطلبات</h2>
+              <div style={{ border: '1px solid #d1d5db', padding: '12px', background: '#f9fafb', fontSize: '12px' }}>
+                <div style={{ marginBottom: '8px' }}>
+                  <span style={{ fontWeight: 700, color: '#6b7280', display: 'block', fontSize: '11px', marginBottom: '6px' }}>الاحتياجات الأساسية:</span>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                    {NEED_OPTIONS.map(opt => (
+                      <span key={opt} style={{
+                        background: disabilityForm.needs.includes(opt) ? '#dcfce7' : '#f3f4f6',
+                        color: disabilityForm.needs.includes(opt) ? '#166534' : '#6b7280',
+                        border: `1px solid ${disabilityForm.needs.includes(opt) ? '#bbf7d0' : '#d1d5db'}`,
+                        fontWeight: 700, padding: '2px 8px', borderRadius: '2px', fontSize: '10px'
+                      }}>{opt}</span>
+                    ))}
+                  </div>
+                </div>
+                <div style={{ borderTop: '1px solid #d1d5db', paddingTop: '8px', marginTop: '8px' }}>
+                  <span style={{ fontWeight: 700, color: '#6b7280', display: 'block', fontSize: '11px' }}>احتياجات أخرى (اذكرها)</span>
+                  <span style={{ fontSize: '14px', fontWeight: 700 }}>{disabilityForm.other_needs || '\u2014'}</span>
+                </div>
+              </div>
+            </section>
+
+            <section style={{ marginBottom: '18px' }}>
+              <h2 style={{ fontSize: '15px', fontWeight: 700, color: '#1f2937', margin: '0 0 10px', borderRight: '4px solid #1f2937', paddingRight: '8px' }}>خامساً: الملاحظات العامة</h2>
+              <div style={{ border: '1px solid #d1d5db', padding: '12px', background: '#f9fafb', minHeight: '40px' }}>
+                <div style={{ fontSize: '12px', color: '#4b5563', lineHeight: 1.6 }}>{disabilityForm.researcher_notes || 'لم تسجل ملاحظات إضافية.'}</div>
+              </div>
+            </section>
+
+            <section style={{ marginTop: '40px', display: 'flex', justifyContent: 'space-between', textAlign: 'center' }}>
+              <div style={{ width: '45%' }}>
+                <p style={{ fontWeight: 700, color: '#1f2937', marginBottom: '18px' }}>مُعِد الاستمارة / الباحث</p>
+                <p style={{ borderTop: '1px solid #9ca3af', paddingTop: '6px', fontSize: '11px', color: '#4b5563' }}>الاسم: _______________ التوقيع: _______________</p>
+                <p style={{ fontSize: '10px', color: '#9ca3af', marginTop: '4px' }}>التاريخ: _______________</p>
+              </div>
+              <div style={{ width: '45%' }}>
+                <p style={{ fontWeight: 700, color: '#1f2937', marginBottom: '18px' }}>الاعتماد والمصادقة</p>
+                <p style={{ borderTop: '1px solid #9ca3af', paddingTop: '6px', fontSize: '11px', color: '#4b5563' }}>الاسم: _______________ التوقيع: _______________</p>
+                <p style={{ fontSize: '10px', color: '#9ca3af', marginTop: '4px' }}>التاريخ: _______________ الختم: _______________</p>
+              </div>
+            </section>
+
+            <div className="page-footer">
+              <span>قسم ذوي الإعاقة والاحتياجات الخاصة</span>
+              <span>صفحة 1 من 1</span>
+            </div>
+          </div>
+        </div>
+      </div>
       <div ref={dashboardPdfRef}
         style={{ position: 'absolute', left: '-9999px', top: '0', width: '794px', overflow: 'hidden', zIndex: -1 }} />
       <div ref={pdfTemplateRef}
