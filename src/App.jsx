@@ -33,6 +33,7 @@ import {
   Clock,
   FileCheck,
   FileDown,
+  BarChart3,
 } from 'lucide-react'
 
 // SUPABASE CONFIGURATION
@@ -584,10 +585,6 @@ export default function App() {
 <h2 style="font-size:15px;font-weight:700;color:#1f2937;margin:0 0 10px;border-right:4px solid #1f2937;padding-right:8px;">ثالثاً: التفاصيل الإضافية والتوصيات</h2>
 <div style="border:1px solid #d1d5db;margin-bottom:8px;">
 <div style="background:#f3f4f6;padding:8px 12px;border-bottom:1px solid #d1d5db;font-weight:700;color:#1f2937;font-size:12px;">الإيجابيات والممارسات الجيدة</div>
-<div style="padding:10px 12px;font-size:12px;color:#4b5563;min-height:30px;">${contentOrEmpty(f.recommendations)}</div>
-</div>
-<div style="border:1px solid #d1d5db;margin-bottom:8px;">
-<div style="background:#f3f4f6;padding:8px 12px;border-bottom:1px solid #d1d5db;font-weight:700;color:#1f2937;font-size:12px;">السلبيات والعوائق المرصودة</div>
 <div style="padding:10px 12px;font-size:12px;color:#4b5563;min-height:30px;">${contentOrEmpty(f.general_notes)}</div>
 </div>
 <div style="border:1px solid #d1d5db;">
@@ -761,6 +758,17 @@ export default function App() {
 <tbody>${facilities.map((f, i) => `<tr><td style="padding:6px;border:1px solid #d1d5db;"><div style="font-weight:700;font-size:11px;color:#111827;">${f.name}</div><div style="font-weight:400;color:#6b7280;font-size:10px;margin-top:2px;">${desc(f.name)}</div></td><td style="padding:6px;border:1px solid #d1d5db;text-align:center;">${getStatusBadge(f.status)}</td><td style="padding:6px;border:1px solid #d1d5db;color:#4b5563;">${c2(f.notes)}</td></tr>`).join('')}</tbody>
 </table>
 </section>
+<section style="margin-bottom:18px;">
+<h2 style="font-size:15px;font-weight:700;color:#1f2937;margin:0 0 10px;border-right:4px solid #1f2937;padding-right:8px;">ثالثاً: التفاصيل الإضافية والتوصيات</h2>
+<div style="border:1px solid #d1d5db;margin-bottom:8px;">
+<div style="background:#f3f4f6;padding:8px 12px;border-bottom:1px solid #d1d5db;font-weight:700;color:#1f2937;font-size:12px;">الإيجابيات والممارسات الجيدة</div>
+<div style="padding:10px 12px;font-size:12px;color:#4b5563;min-height:30px;">${c2(report.general_notes)}</div>
+</div>
+<div style="border:1px solid #d1d5db;">
+<div style="background:#f3f4f6;padding:8px 12px;border-bottom:1px solid #d1d5db;font-weight:700;color:#1f2937;font-size:12px;">التوصيات والاحتياجات الفعلية</div>
+<div style="padding:10px 12px;font-size:12px;color:#4b5563;min-height:30px;">${c2(report.recommendations)}</div>
+</div>
+</section>
 <section style="margin-top:30px;display:flex;justify-content:space-between;text-align:center;">
 <div style="width:45%;"><p style="font-weight:700;color:#1f2937;margin-bottom:18px;">مُعِد التقرير</p><p style="border-top:1px solid #9ca3af;padding-top:6px;font-size:11px;color:#4b5563;">الاسم: _______________ التوقيع: _______________</p><p style="font-size:10px;color:#9ca3af;margin-top:4px;">التاريخ: _______________</p></div>
 <div style="width:45%;"><p style="font-weight:700;color:#1f2937;margin-bottom:18px;">الاعتماد والمصادقة</p><p style="border-top:1px solid #9ca3af;padding-top:6px;font-size:11px;color:#4b5563;">الاسم: _______________ التوقيع: _______________</p><p style="font-size:10px;color:#9ca3af;margin-top:4px;">التاريخ: _______________ الختم: _______________</p></div>
@@ -780,14 +788,15 @@ export default function App() {
 <header style="border-bottom:2px solid #1f2937;padding-bottom:12px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;">
 <div style="display:flex;align-items:center;gap:12px;">
 <div style="width:60px;height:60px;background:#e5e7eb;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;color:#6b7280;font-weight:700;border:2px solid #d1d5db;">شعار<br/>الجهة</div>
-<div style="text-align:right;"><h1 style="font-size:22px;font-weight:800;color:#111827;margin:0 0 4px;">استمارة تقييم حالة</h1><p style="font-size:14px;font-weight:600;color:#374151;margin:0;">قسم ذوي الإعاقة والاحتياجات الخاصة</p></div>
+<div style="text-align:right;"><h1 style="font-size:22px;font-weight:800;color:#111827;margin:0 0 4px;">استمارة تقييم حالة ذوي الإعاقة</h1><p style="font-size:14px;font-weight:600;color:#374151;margin:0;">قسم الرصد والتقييم الميداني</p></div>
 </div>
-<div style="text-align:left;font-size:11px;font-weight:600;color:#374151;"><div>رقم التقرير: <span style="font-family:monospace;">${reportNum}</span></div><div>تاريخ الإصدار: <span dir="ltr">${todayIso}</span></div></div>
+<div style="text-align:left;font-size:11px;font-weight:600;color:#374151;"><div>رقم الاستمارة: <span style="font-family:monospace;">${reportNum}</span></div><div>تاريخ الرصد: <span dir="ltr">${todayIso}</span></div></div>
 </header>
 
 <section style="margin-bottom:14px;">
-<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">أولاً: بيانات مقدم الطلب</h2>
+<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">أولاً: البيانات الأساسية والشخصية</h2>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;border:1px solid #d1d5db;padding:10px;background:#f9fafb;font-size:11px;">
+<div style="grid-column:span 2;"><span style="font-weight:700;color:#6b7280;display:block;font-size:10px;">مكان رصد الحالة</span><span style="font-size:13px;font-weight:700;">${report.residence_area || '\u2014'}</span></div>
 <div style="grid-column:span 2;"><span style="font-weight:700;color:#6b7280;display:block;font-size:10px;">الاسم الرباعي</span><span style="font-size:13px;font-weight:700;">${report.full_name || '\u2014'}</span></div>
 <div><span style="font-weight:700;color:#6b7280;display:block;font-size:10px;">الجنس</span>${report.gender || '\u2014'}</div>
 <div><span style="font-weight:700;color:#6b7280;display:block;font-size:10px;">العمر</span>${report.age || '\u2014'}</div>
@@ -877,6 +886,202 @@ ${c2(report.general_notes)}
       showToast('تم تصدير PDF بنجاح', 'success')
     } catch (err) {
       console.error('Archive PDF export error:', err)
+      showToast('فشل في تصدير PDF - ' + err.message, 'error')
+    } finally {
+      setPdfExporting(false)
+    }
+  }
+
+  const generateDashboardReport = () => {
+    if (!reportStartDate || !reportEndDate) {
+      showToast('يرجى تحديد تاريخ البداية والنهاية', 'error')
+      return
+    }
+    const start = new Date(reportStartDate)
+    const end = new Date(reportEndDate)
+    const diffDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24))
+    if (diffDays < 5) { showToast('مدة التقرير يجب ألا تقل عن 5 أيام', 'error'); return }
+    if (diffDays > 30) { showToast('مدة التقرير يجب ألا تزيد عن 30 يوماً', 'error'); return }
+
+    const filtered = reports.filter(r => {
+      const dateStr = r.visit_date || r.created_at
+      if (!dateStr) return false
+      const d = new Date(dateStr)
+      return d >= start && d <= end
+    })
+
+    const mosques = filtered.filter(r => r.recordType === 'mosque')
+    const disabilities = filtered.filter(r => r.recordType === 'disability')
+
+    const statusCounts = { 'مناسب': 0, 'يحتاج تحسين': 0, 'غير متوفر': 0, 'لا ينطبق': 0 }
+    mosques.forEach(m => {
+      if (m.facility_evaluations) {
+        Object.values(m.facility_evaluations).forEach(ev => {
+          if (ev.status && statusCounts[ev.status] !== undefined) statusCounts[ev.status]++
+        })
+      }
+    })
+
+    const typeCounts = {}
+    disabilities.forEach(d => {
+      if (d.disability_type) typeCounts[d.disability_type] = (typeCounts[d.disability_type] || 0) + 1
+    })
+    const topDisabilityTypes = Object.entries(typeCounts).sort((a, b) => b[1] - a[1]).slice(0, 3)
+
+    const needCounts = {}
+    disabilities.forEach(d => {
+      if (d.needs) d.needs.forEach(need => { needCounts[need] = (needCounts[need] || 0) + 1 })
+    })
+    const topNeeds = Object.entries(needCounts).sort((a, b) => b[1] - a[1]).slice(0, 3)
+
+    setDashboardStats({
+      totalMosques: mosques.length,
+      totalDisabilities: disabilities.length,
+      totalFieldVisits: filtered.length,
+      readyCount: statusCounts['مناسب'],
+      needsImprovement: statusCounts['يحتاج تحسين'],
+      notAvailable: statusCounts['غير متوفر'],
+      notApplicable: statusCounts['لا ينطبق'],
+      topDisabilityTypes,
+      topNeeds,
+      startDate: reportStartDate,
+      endDate: reportEndDate,
+      diffDays,
+    })
+    showToast('تم توليد التقرير بنجاح', 'success')
+  }
+
+  const exportDashboardPDF = async () => {
+    if (!dashboardStats) { showToast('يرجى توليد التقرير أولاً', 'warning'); return }
+    setPdfExporting(true)
+    try {
+      const todayIso = new Date().toISOString().split('T')[0]
+      const reportRef = `REP-${dashboardStats.startDate.slice(0, 7).replace('-', '')}-M`
+      const fmt = (s) => s ? new Date(s).toLocaleDateString('ar-EG') : '—'
+      const c = (v) => v ?? 0
+      const el = dashboardPdfRef.current
+      if (!el) throw new Error('Dashboard template ref not found')
+
+      const topTypesHtml = dashboardStats.topDisabilityTypes.map(([t, n]) =>
+        `<div style="display:table-row;" class="list-item"><div style="display:table-cell;font-weight:700;color:#4b5563;padding:2px 0;">${t}</div><div style="display:table-cell;text-align:center;font-weight:700;width:30%;">${n} حالة</div></div>`
+      ).join('') || '<div style="padding:4px;color:#9ca3af;">لا توجد بيانات</div>'
+
+      const topNeedsHtml = dashboardStats.topNeeds.map(([t, n]) =>
+        `<div style="display:table-row;" class="list-item"><div style="display:table-cell;font-weight:700;color:#4b5563;padding:2px 0;">${t}</div><div style="display:table-cell;text-align:center;font-weight:700;width:30%;">${n} طلباً</div></div>`
+      ).join('') || '<div style="padding:4px;color:#9ca3af;">لا توجد بيانات</div>'
+
+      el.innerHTML = `<div dir="rtl" style="width:794px;min-height:1123px;background:#fff;padding:0;font-family:Cairo,Traditonal Arabic,Arial,sans-serif;color:#111827;">
+<style>
+.a4-page{padding:15mm 18mm;position:relative}
+.page-footer{position:absolute;bottom:10mm;left:18mm;right:18mm;display:flex;justify-content:space-between;font-size:10px;color:#9ca3af;border-top:1px solid #e5e7eb;padding-top:4px;}
+.stat-card{border:1px solid #d1d5db;background:#f9fafb;text-align:center;padding:8px;border-radius:4px;}
+.stat-num{font-size:18pt;font-weight:700;color:#111827;display:block;}
+.stat-label{font-size:8.5pt;color:#4b5563;font-weight:700;display:block;}
+.data-table{width:100%;border-collapse:collapse;margin-bottom:6px;font-size:9pt;}
+.data-table th,.data-table td{border:1px solid #d1d5db;padding:5px 7px;text-align:right;}
+.data-table th{background:#f3f4f6;color:#111827;font-weight:700;}
+.status-ready{color:#166534;font-weight:700;background:#dcfce7;padding:1px 6px;border-radius:2px;border:1px solid #bbf7d0;font-size:10px;}
+.status-mod{color:#9a3412;font-weight:700;background:#ffedd5;padding:1px 6px;border-radius:2px;border:1px solid #fed7aa;font-size:10px;}
+.status-unready{color:#991b1b;font-weight:700;background:#fee2e2;padding:1px 6px;border-radius:2px;border:1px solid #fecaca;font-size:10px;}
+.sub-card{border:1px solid #d1d5db;border-radius:4px;}
+.sub-card-header{background:#f3f4f6;padding:5px 8px;font-weight:700;font-size:9pt;border-bottom:1px solid #d1d5db;color:#1f2937;}
+.sub-card-body{padding:6px 8px;}
+.list-item{border-bottom:1px dashed #e5e7eb;padding:3px 0;}
+.list-item:last-child{border-bottom:none;}
+@media print{body{background:#fff}}
+</style>
+<div class="a4-page">
+<header style="border-bottom:2px solid #1e3a8a;padding-bottom:6px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;">
+<div style="text-align:right;">
+<h1 style="font-size:15pt;font-weight:700;color:#1e3a8a;margin:0 0 2px;">التقرير الدوري الشامل للتقييم الميداني</h1>
+<p style="font-size:10.5pt;font-weight:600;color:#4b5563;margin:0;">قسم ذوي الإعاقة والاحتياجات الخاصة</p>
+</div>
+<div style="text-align:left;font-size:8.5pt;background:#f3f4f6;border:1px solid #e5e7eb;padding:4px 8px;border-radius:4px;">
+<div style="font-weight:700;color:#374151;">نوع التقرير: <span style="color:#000;">شهري موجز</span></div>
+<div style="font-weight:700;color:#374151;">الفترة: <span style="color:#000;" dir="ltr">${fmt(dashboardStats.startDate)} - ${fmt(dashboardStats.endDate)}</span></div>
+<div style="font-weight:700;color:#374151;">رقم المرجع: <span style="color:#000;">${reportRef}</span></div>
+</div>
+</header>
+
+<div style="background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;font-size:8.5pt;font-weight:700;padding:4px 8px;margin-bottom:10px;border-radius:3px;">
+✔ مسار التقرير الفوري: تم الاعتماد النهائي والتوجيه المباشر للمنظومة والأرشيف الرقمي.
+</div>
+
+<section>
+<h2 style="font-size:11pt;font-weight:700;color:#1e3a8a;margin:8px 0 5px;border-right:3px solid #1e3a8a;padding-right:6px;">أولاً: الملخص الإحصائي العام</h2>
+<div style="display:flex;gap:4px;margin-bottom:6px;">
+<div style="flex:1;" class="stat-card"><span class="stat-num">${dashboardStats.totalMosques}</span><span class="stat-label">مرافق ومساجد جرى تقييمها</span></div>
+<div style="flex:1;" class="stat-card"><span class="stat-num">${dashboardStats.totalDisabilities}</span><span class="stat-label">حالات تم رصدها وتوثيقها</span></div>
+<div style="flex:1;" class="stat-card"><span class="stat-num">${dashboardStats.totalFieldVisits}</span><span class="stat-label">جولات ميدانية مكثفة مُنفذة</span></div>
+</div>
+</section>
+
+<section>
+<h2 style="font-size:11pt;font-weight:700;color:#1e3a8a;margin:8px 0 5px;border-right:3px solid #1e3a8a;padding-right:6px;">ثانياً: موجز تقييم الوصول الشامل للمرافق (المساجد)</h2>
+<table class="data-table">
+<thead><tr><th style="width:30%;">مستوى الجاهزية الفنية</th><th style="width:15%;text-align:center;">عدد المرافق</th><th style="width:55%;">أبرز العوائق والملاحظات المرصودة من المفتشين</th></tr></thead>
+<tbody>
+<tr><td><span class="status-ready">جاهز ومناسب بالكامل</span></td><td style="text-align:center;font-weight:700;">${dashboardStats.readyCount}</td><td rowspan="3" style="font-size:8.5pt;color:#374151;line-height:1.4;">—</td></tr>
+<tr><td><span class="status-mod">يحتاج لتعديلات تحسينية</span></td><td style="text-align:center;font-weight:700;">${dashboardStats.needsImprovement}</td></tr>
+<tr><td><span class="status-unready">غير مهيأ للوصول الشامل</span></td><td style="text-align:center;font-weight:700;">${dashboardStats.notAvailable}</td></tr>
+</tbody>
+</table>
+</section>
+
+<section>
+<h2 style="font-size:11pt;font-weight:700;color:#1e3a8a;margin:8px 0 5px;border-right:3px solid #1e3a8a;padding-right:6px;">ثالثاً: موجز تقييم حالات ذوي الإعاقة والاحتياجات</h2>
+<div style="display:flex;gap:5px;">
+<div style="flex:1;">
+<div class="sub-card"><div class="sub-card-header">أعلى تصنيفات الإعاقة تسجيلاً</div><div class="sub-card-body"><div style="display:table;width:100%;">${topTypesHtml}</div></div></div>
+</div>
+<div style="flex:1;">
+<div class="sub-card"><div class="sub-card-header">أكثر المتطلبات والاحتياجات طلباً</div><div class="sub-card-body"><div style="display:table;width:100%;">${topNeedsHtml}</div></div></div>
+</div>
+</div>
+</section>
+
+<section>
+<h2 style="font-size:11pt;font-weight:700;color:#1e3a8a;margin:8px 0 5px;border-right:3px solid #1e3a8a;padding-right:6px;">رابعاً: التوصيات والقرارات التشغيلية المقترحة</h2>
+<div style="border:1px solid #d1d5db;background:#fff;padding:6px 10px;font-size:9pt;color:#374151;border-radius:4px;line-height:1.4;">
+<strong>1. كشوفات الدعم الطبي:</strong> إحالة قوائم الاحتياجات الطبية العاجلة (الكراسي والمعدات) مباشرة للجهات المختصة للتوفير الفوري.<br>
+<strong>2. كود البناء الهندسي:</strong> إلزام إدارة المشروعات والمقاولين بتطبيق كود الوصول الشامل بالمساجد المصنفة كـ "غير مهيأة".<br>
+<strong>3. جولات الأطراف:</strong> إعادة توجيه مسار المفتشين في الفترة القادمة للتركيز على مناطق الأطراف والفروع التي تفتقر للتغطية الشاملة.
+</div>
+</section>
+
+<section style="margin-top:15px;">
+<div style="display:flex;justify-content:space-between;text-align:center;">
+<div style="flex:1;padding:0 15mm;"><p style="font-size:10pt;font-weight:700;color:#111827;margin-bottom:35px;">رئيس القسم</p><p style="border-top:1px solid #9ca3af;padding-top:4px;font-size:8.5pt;color:#4b5563;font-weight:700;">الاسم والتوقيع</p></div>
+<div style="flex:1;padding:0 15mm;"><p style="font-size:10pt;font-weight:700;color:#111827;margin-bottom:35px;">مدير المكتب</p><p style="border-top:1px solid #9ca3af;padding-top:4px;font-size:8.5pt;color:#4b5563;font-weight:700;">الختم والاعتماد النهائي</p></div>
+</div>
+</section>
+
+<div class="page-footer"><span>قسم ذوي الإعاقة والاحتياجات الخاصة</span><span>صفحة 1 من 1</span></div>
+</div></div>`
+
+      await document.fonts.ready
+      await new Promise(r => setTimeout(r, 500))
+      const canvas = await html2canvas(el, { scale: 2, backgroundColor: '#ffffff', logging: false, useCORS: true, windowWidth: 794, width: 794, height: el.scrollHeight })
+      const imgData = canvas.toDataURL('image/png')
+      const imgWidth = 190
+      const imgHeight = (canvas.height * imgWidth) / canvas.width
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+      let heightLeft = imgHeight
+      let position = 0
+      const pageHeight = 297
+      doc.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight, undefined, 'FAST')
+      heightLeft -= pageHeight
+      while (heightLeft > 0) {
+        position -= pageHeight
+        doc.addPage()
+        doc.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight, undefined, 'FAST')
+        heightLeft -= pageHeight
+      }
+      doc.save(`تقرير_دوري_${dashboardStats.startDate}_${dashboardStats.endDate}.pdf`)
+      el.innerHTML = ''
+      showToast('تم تصدير تقرير PDF بنجاح', 'success')
+    } catch (err) {
+      console.error('Dashboard PDF export error:', err)
       showToast('فشل في تصدير PDF - ' + err.message, 'error')
     } finally {
       setPdfExporting(false)
@@ -1063,6 +1268,14 @@ ${c2(report.general_notes)}
                 : 'text-gray-400 hover:text-white hover:bg-white/[0.04] border border-transparent'
               }`}>
             <span className="flex items-center justify-center gap-2"><Users className="w-4 h-4" /> تقييم حالات ذوي الإعاقة</span>
+          </button>
+          <button type="button" onClick={() => handleTabChange('tab3')}
+            className={`flex-1 px-5 py-3 rounded-xl text-sm font-medium transition-all duration-300
+              ${activeTab === 'tab3'
+                ? 'bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 shadow-lg shadow-cyan-500/5'
+                : 'text-gray-400 hover:text-white hover:bg-white/[0.04] border border-transparent'
+              }`}>
+            <span className="flex items-center justify-center gap-2"><BarChart3 className="w-4 h-4" /> الرصد الدوري الموجز</span>
           </button>
         </div>
 
@@ -1314,6 +1527,119 @@ ${c2(report.general_notes)}
         {renderArchive('disability')}
         </>)}
 
+        {/* ============ TAB 3: DASHBOARD ============ */}
+        {activeTab === 'tab3' && (
+        <GlassCard className="mb-6">
+          <div className="px-6 sm:px-10 py-6 sm:py-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 border border-cyan-500/30"><BarChart3 className="w-4 h-4 text-cyan-400" /></div>
+              <h2 className="text-xl font-bold text-white">الرصد الدوري الموجز</h2>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-6">
+              <GlassInput label="تاريخ البداية" icon={Calendar} required>
+                <input type="date" value={reportStartDate} onChange={(e) => setReportStartDate(e.target.value)}
+                  className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-gray-300 outline-none transition-all duration-300 focus:border-cyan-500/50 focus:bg-white/[0.06] [&::-webkit-calendar-picker-indicator]:filter [&::-webkit-calendar-picker-indicator]:invert-[0.7]" />
+              </GlassInput>
+              <GlassInput label="تاريخ النهاية" icon={Calendar} required>
+                <input type="date" value={reportEndDate} onChange={(e) => setReportEndDate(e.target.value)}
+                  className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-gray-300 outline-none transition-all duration-300 focus:border-cyan-500/50 focus:bg-white/[0.06] [&::-webkit-calendar-picker-indicator]:filter [&::-webkit-calendar-picker-indicator]:invert-[0.7]" />
+              </GlassInput>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3 mb-6">
+              <button type="button" onClick={generateDashboardReport}
+                className="px-8 py-3 rounded-xl bg-gradient-to-r from-cyan-500/20 to-cyan-600/10 border border-cyan-500/30 text-cyan-300 font-medium hover:from-cyan-500/30 hover:to-cyan-600/20 hover:shadow-[0_0_30px_rgba(6,182,212,0.2)] transition-all duration-300 flex items-center justify-center gap-2">
+                <BarChart3 className="w-4 h-4" /> توليد التقرير
+              </button>
+              {dashboardStats && (
+                <button type="button" onClick={exportDashboardPDF} disabled={pdfExporting}
+                  className="px-6 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-gray-400 font-medium hover:text-amber-400 hover:border-amber-500/30 hover:bg-amber-500/10 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                  <FileDown className="w-4 h-4" /> {pdfExporting ? 'جاري التصدير...' : 'تصدير PDF'}
+                </button>
+              )}
+            </div>
+
+            {dashboardStats && (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                  <GlassCard>
+                    <div className="p-5 text-center">
+                      <Building2 className="w-8 h-8 text-cyan-400 mx-auto mb-2" />
+                      <span className="text-3xl font-bold text-white block">{dashboardStats.totalMosques}</span>
+                      <span className="text-sm text-gray-400">مرافق ومساجد جرى تقييمها</span>
+                    </div>
+                  </GlassCard>
+                  <GlassCard>
+                    <div className="p-5 text-center">
+                      <Users className="w-8 h-8 text-purple-400 mx-auto mb-2" />
+                      <span className="text-3xl font-bold text-white block">{dashboardStats.totalDisabilities}</span>
+                      <span className="text-sm text-gray-400">حالات تم رصدها وتوثيقها</span>
+                    </div>
+                  </GlassCard>
+                  <GlassCard>
+                    <div className="p-5 text-center">
+                      <ClipboardCheck className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
+                      <span className="text-3xl font-bold text-white block">{dashboardStats.totalFieldVisits}</span>
+                      <span className="text-sm text-gray-400">جولات ميدانية مُنفذة</span>
+                    </div>
+                  </GlassCard>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                  <GlassCard>
+                    <div className="p-5">
+                      <h3 className="text-white font-bold text-sm mb-4 flex items-center gap-2"><Building2 className="w-4 h-4 text-cyan-400" /> جاهزية المرافق</h3>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-400">جاهز ومناسب بالكامل</span>
+                          <span className="text-emerald-400 font-bold">{dashboardStats.readyCount}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-400">يحتاج تعديلات تحسينية</span>
+                          <span className="text-amber-400 font-bold">{dashboardStats.needsImprovement}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-400">غير مهيأ للوصول الشامل</span>
+                          <span className="text-red-400 font-bold">{dashboardStats.notAvailable}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </GlassCard>
+
+                  <GlassCard>
+                    <div className="p-5">
+                      <h3 className="text-white font-bold text-sm mb-4 flex items-center gap-2"><Users className="w-4 h-4 text-purple-400" /> أكثر الاحتياجات طلباً</h3>
+                      <div className="space-y-3">
+                        {dashboardStats.topNeeds.length > 0 ? dashboardStats.topNeeds.map(([need, count], i) => (
+                          <div key={i} className="flex items-center justify-between">
+                            <span className="text-sm text-gray-400">{need}</span>
+                            <span className="text-cyan-400 font-bold">{count}</span>
+                          </div>
+                        )) : <span className="text-sm text-gray-500">لا توجد بيانات</span>}
+                      </div>
+                    </div>
+                  </GlassCard>
+                </div>
+
+                <GlassCard>
+                  <div className="p-5">
+                    <h3 className="text-white font-bold text-sm mb-4 flex items-center gap-2"><BarChart3 className="w-4 h-4 text-cyan-400" /> تصنيفات الإعاقة الأكثر تسجيلاً</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      {dashboardStats.topDisabilityTypes.length > 0 ? dashboardStats.topDisabilityTypes.map(([type, count], i) => (
+                        <div key={i} className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 text-center">
+                          <span className="text-2xl font-bold text-white block">{count}</span>
+                          <span className="text-sm text-gray-400">{type}</span>
+                        </div>
+                      )) : <span className="text-sm text-gray-500 col-span-3 text-center py-4">لا توجد بيانات</span>}
+                    </div>
+                  </div>
+                </GlassCard>
+              </>
+            )}
+          </div>
+        </GlassCard>
+        )}
 
       </div>
 
