@@ -504,7 +504,7 @@ export default function App() {
     setPdfExporting(true)
     try {
       const todayIso = new Date().toISOString().split('T')[0]
-      const reportNum = String(report.id).slice(-6)
+      const reportNum = report.report_number || String(report.id).slice(-6)
       const c = (val) => val && val.trim() ? val : '\u2014'
       const el = pdfTemplateRef.current
       if (!el) throw new Error('Template ref not found')
