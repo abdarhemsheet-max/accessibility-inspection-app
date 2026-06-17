@@ -568,11 +568,34 @@ export default function App() {
 <div style="padding:10px 12px;font-size:12px;color:#4b5563;min-height:30px;">${c2(report.recommendations)}</div>
 </div>
 </section>
-<section style="margin-top:30px;display:flex;justify-content:space-between;text-align:center;">
-<div style="width:45%;"><p style="font-weight:700;color:#1f2937;margin-bottom:18px;">مُعِد التقرير</p><p style="border-top:1px solid #9ca3af;padding-top:6px;font-size:11px;color:#4b5563;">الاسم: _______________ التوقيع: _______________</p><p style="font-size:10px;color:#9ca3af;margin-top:4px;">التاريخ: _______________</p></div>
-<div style="width:45%;"><p style="font-weight:700;color:#1f2937;margin-bottom:18px;">الاعتماد والمصادقة</p><p style="border-top:1px solid #9ca3af;padding-top:6px;font-size:11px;color:#4b5563;">الاسم: _______________ التوقيع: _______________</p><p style="font-size:10px;color:#9ca3af;margin-top:4px;">التاريخ: _______________ الختم: _______________</p></div>
+<section style="margin-top:30px;">
+<div style="display:flex;justify-content:space-between;gap:20px;">
+<div style="flex:1;text-align:center;">
+<p style="font-weight:700;color:#1f2937;margin-bottom:16px;font-size:12px;">مُعِد التقرير</p>
+<div style="margin-bottom:10px;">
+<span style="font-size:11px;color:#4b5563;font-weight:600;">الاسم:</span>
+<div style="border-bottom:1px solid #9ca3af;width:80%;margin:4px auto 0;height:18px;"></div>
+</div>
+<div>
+<span style="font-size:11px;color:#4b5563;font-weight:600;">التوقيع:</span>
+<div style="border-bottom:1px solid #9ca3af;width:80%;margin:4px auto 0;height:18px;"></div>
+</div>
+</div>
+<div style="flex:1;text-align:center;">
+<p style="font-weight:700;color:#1f2937;margin-bottom:16px;font-size:12px;">رئيس قسم الإعاقة</p>
+<div style="margin-bottom:10px;">
+<span style="font-size:11px;color:#4b5563;font-weight:600;">الاسم: أحمد فرج خليفة</span>
+</div>
+<div>
+<span style="font-size:11px;color:#4b5563;font-weight:600;">التوقيع:</span>
+<div style="border-bottom:1px solid #9ca3af;width:80%;margin:4px auto 0;height:18px;"></div>
+</div>
+</div>
+</div>
 </section>
-<div class="page-footer"><span>قسم ذوي الإعاقة والاحتياجات الخاصة</span><span>صفحة 1 من 1</span></div>
+<div style="border-top:1px solid #e5e7eb;margin-top:12px;padding-top:6px;display:flex;justify-content:flex-start;font-size:10px;color:#9ca3af;">
+<span>قسم ذوي الإعاقة والاحتياجات الخاصة</span>
+</div>
 </div></div>`
       } else {
         const needsList = report.needs?.length > 0 ? report.needs.map(n => `<span style="background:#dcfce7;color:#166534;border:1px solid #bbf7d0;font-weight:700;padding:2px 8px;border-radius:2px;font-size:10px;">${n}</span>`).join(' ') : '\u2014'
@@ -640,12 +663,34 @@ ${c2(resNotes)}
 </div>
 </section>
 
-<section style="margin-top:30px;display:flex;justify-content:space-between;text-align:center;">
-<div style="width:45%;"><p style="font-weight:700;color:#1f2937;margin-bottom:20px;">مُعِد الاستمارة / الباحث</p><p style="border-top:1px solid #9ca3af;padding-top:6px;font-size:11px;color:#4b5563;">الاسم: _______________ التوقيع: _______________</p><p style="font-size:10px;color:#9ca3af;margin-top:4px;">التاريخ: _______________</p></div>
-<div style="width:45%;"><p style="font-weight:700;color:#1f2937;margin-bottom:20px;">الاعتماد والمصادقة</p><p style="border-top:1px solid #9ca3af;padding-top:6px;font-size:11px;color:#4b5563;">الاسم: _______________ التوقيع: _______________</p><p style="font-size:10px;color:#9ca3af;margin-top:4px;">التاريخ: _______________ الختم: _______________</p></div>
+<section style="margin-top:30px;">
+<div style="display:flex;justify-content:space-between;gap:20px;">
+<div style="flex:1;text-align:center;">
+<p style="font-weight:700;color:#1f2937;margin-bottom:16px;font-size:12px;">مُعِد الاستمارة / الباحث</p>
+<div style="margin-bottom:10px;">
+<span style="font-size:11px;color:#4b5563;font-weight:600;">الاسم:</span>
+<div style="border-bottom:1px solid #9ca3af;width:80%;margin:4px auto 0;height:18px;"></div>
+</div>
+<div>
+<span style="font-size:11px;color:#4b5563;font-weight:600;">التوقيع:</span>
+<div style="border-bottom:1px solid #9ca3af;width:80%;margin:4px auto 0;height:18px;"></div>
+</div>
+</div>
+<div style="flex:1;text-align:center;">
+<p style="font-weight:700;color:#1f2937;margin-bottom:16px;font-size:12px;">رئيس قسم الإعاقة</p>
+<div style="margin-bottom:10px;">
+<span style="font-size:11px;color:#4b5563;font-weight:600;">الاسم: أحمد فرج خليفة</span>
+</div>
+<div>
+<span style="font-size:11px;color:#4b5563;font-weight:600;">التوقيع:</span>
+<div style="border-bottom:1px solid #9ca3af;width:80%;margin:4px auto 0;height:18px;"></div>
+</div>
+</div>
+</div>
 </section>
-
-<div class="page-footer"><span>قسم ذوي الإعاقة والاحتياجات الخاصة</span><span>صفحة 1 من 1</span></div>
+<div style="border-top:1px solid #e5e7eb;margin-top:12px;padding-top:6px;display:flex;justify-content:flex-start;font-size:10px;color:#9ca3af;">
+<span>قسم ذوي الإعاقة والاحتياجات الخاصة</span>
+</div>
 </div></div>`
       }
 
@@ -823,13 +868,33 @@ ${c2(resNotes)}
 </section>
 
 <section style="margin-top:15px;">
-<div style="display:flex;justify-content:space-between;text-align:center;">
-<div style="flex:1;padding:0 15mm;"><p style="font-size:10pt;font-weight:700;color:#111827;margin-bottom:35px;">رئيس القسم</p><p style="border-top:1px solid #9ca3af;padding-top:4px;font-size:8.5pt;color:#4b5563;font-weight:700;">الاسم والتوقيع</p></div>
-<div style="flex:1;padding:0 15mm;"><p style="font-size:10pt;font-weight:700;color:#111827;margin-bottom:35px;">مدير المكتب</p><p style="border-top:1px solid #9ca3af;padding-top:4px;font-size:8.5pt;color:#4b5563;font-weight:700;">الختم والاعتماد النهائي</p></div>
+<div style="display:flex;justify-content:space-between;gap:20px;">
+<div style="flex:1;text-align:center;">
+<p style="font-size:10pt;font-weight:700;color:#111827;margin-bottom:12px;">مُعِد التقرير</p>
+<div style="margin-bottom:8px;">
+<span style="font-size:9pt;color:#4b5563;font-weight:600;">الاسم:</span>
+<div style="border-bottom:1px solid #9ca3af;width:70%;margin:3px auto 0;height:14px;"></div>
+</div>
+<div>
+<span style="font-size:9pt;color:#4b5563;font-weight:600;">التوقيع:</span>
+<div style="border-bottom:1px solid #9ca3af;width:70%;margin:3px auto 0;height:14px;"></div>
+</div>
+</div>
+<div style="flex:1;text-align:center;">
+<p style="font-size:10pt;font-weight:700;color:#111827;margin-bottom:12px;">رئيس قسم الإعاقة</p>
+<div style="margin-bottom:8px;">
+<span style="font-size:9pt;color:#4b5563;font-weight:600;">الاسم: أحمد فرج خليفة</span>
+</div>
+<div>
+<span style="font-size:9pt;color:#4b5563;font-weight:600;">التوقيع:</span>
+<div style="border-bottom:1px solid #9ca3af;width:70%;margin:3px auto 0;height:14px;"></div>
+</div>
+</div>
 </div>
 </section>
-
-<div class="page-footer"><span>قسم ذوي الإعاقة والاحتياجات الخاصة</span><span>صفحة 1 من 1</span></div>
+<div style="border-top:1px solid #e5e7eb;margin-top:10px;padding-top:5px;display:flex;justify-content:flex-start;font-size:8pt;color:#9ca3af;">
+<span>قسم ذوي الإعاقة والاحتياجات الخاصة</span>
+</div>
 </div></div>`
 
       await capturePdfFromRef(dashboardPdfRef, `تقرير_دوري_${dashboardStats.startDate}_${dashboardStats.endDate}.pdf`)
@@ -1615,22 +1680,33 @@ ${c2(resNotes)}
               </div>
             </section>
 
-            <section style={{ marginTop: '40px', display: 'flex', justifyContent: 'space-between', textAlign: 'center' }}>
-              <div style={{ width: '45%' }}>
-                <p style={{ fontWeight: 700, color: '#1f2937', marginBottom: '18px' }}>مُعِد التقرير</p>
-                <p style={{ borderTop: '1px solid #9ca3af', paddingTop: '6px', fontSize: '11px', color: '#4b5563' }}>الاسم: _______________ التوقيع: _______________</p>
-                <p style={{ fontSize: '10px', color: '#9ca3af', marginTop: '4px' }}>التاريخ: _______________</p>
-              </div>
-              <div style={{ width: '45%' }}>
-                <p style={{ fontWeight: 700, color: '#1f2937', marginBottom: '18px' }}>الاعتماد والمصادقة</p>
-                <p style={{ borderTop: '1px solid #9ca3af', paddingTop: '6px', fontSize: '11px', color: '#4b5563' }}>الاسم: _______________ التوقيع: _______________</p>
-                <p style={{ fontSize: '10px', color: '#9ca3af', marginTop: '4px' }}>التاريخ: _______________ الختم: _______________</p>
+            <section style={{ marginTop: '40px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '20px' }}>
+                <div style={{ flex: 1, textAlign: 'center' }}>
+                  <p style={{ fontWeight: 700, color: '#1f2937', marginBottom: '16px', fontSize: '12px' }}>مُعِد التقرير</p>
+                  <div style={{ marginBottom: '10px' }}>
+                    <span style={{ fontSize: '11px', color: '#4b5563', fontWeight: 600 }}>الاسم:</span>
+                    <div style={{ borderBottom: '1px solid #9ca3af', width: '80%', margin: '4px auto 0', height: '18px' }} />
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '11px', color: '#4b5563', fontWeight: 600 }}>التوقيع:</span>
+                    <div style={{ borderBottom: '1px solid #9ca3af', width: '80%', margin: '4px auto 0', height: '18px' }} />
+                  </div>
+                </div>
+                <div style={{ flex: 1, textAlign: 'center' }}>
+                  <p style={{ fontWeight: 700, color: '#1f2937', marginBottom: '16px', fontSize: '12px' }}>رئيس قسم الإعاقة</p>
+                  <div style={{ marginBottom: '10px' }}>
+                    <span style={{ fontSize: '11px', color: '#4b5563', fontWeight: 600 }}>الاسم: أحمد فرج خليفة</span>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '11px', color: '#4b5563', fontWeight: 600 }}>التوقيع:</span>
+                    <div style={{ borderBottom: '1px solid #9ca3af', width: '80%', margin: '4px auto 0', height: '18px' }} />
+                  </div>
+                </div>
               </div>
             </section>
-
-            <div className="page-footer">
+            <div style={{ borderTop: '1px solid #e5e7eb', marginTop: '12px', paddingTop: '6px', display: 'flex', justifyContent: 'flex-start', fontSize: '10px', color: '#9ca3af' }}>
               <span>قسم ذوي الإعاقة والاحتياجات الخاصة</span>
-              <span>صفحة 1 من 1</span>
             </div>
           </div>
         </div>
@@ -1756,22 +1832,33 @@ ${c2(resNotes)}
               </div>
             </section>
 
-            <section style={{ marginTop: '40px', display: 'flex', justifyContent: 'space-between', textAlign: 'center' }}>
-              <div style={{ width: '45%' }}>
-                <p style={{ fontWeight: 700, color: '#1f2937', marginBottom: '18px' }}>مُعِد الاستمارة / الباحث</p>
-                <p style={{ borderTop: '1px solid #9ca3af', paddingTop: '6px', fontSize: '11px', color: '#4b5563' }}>الاسم: _______________ التوقيع: _______________</p>
-                <p style={{ fontSize: '10px', color: '#9ca3af', marginTop: '4px' }}>التاريخ: _______________</p>
-              </div>
-              <div style={{ width: '45%' }}>
-                <p style={{ fontWeight: 700, color: '#1f2937', marginBottom: '18px' }}>الاعتماد والمصادقة</p>
-                <p style={{ borderTop: '1px solid #9ca3af', paddingTop: '6px', fontSize: '11px', color: '#4b5563' }}>الاسم: _______________ التوقيع: _______________</p>
-                <p style={{ fontSize: '10px', color: '#9ca3af', marginTop: '4px' }}>التاريخ: _______________ الختم: _______________</p>
+            <section style={{ marginTop: '40px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '20px' }}>
+                <div style={{ flex: 1, textAlign: 'center' }}>
+                  <p style={{ fontWeight: 700, color: '#1f2937', marginBottom: '16px', fontSize: '12px' }}>مُعِد الاستمارة / الباحث</p>
+                  <div style={{ marginBottom: '10px' }}>
+                    <span style={{ fontSize: '11px', color: '#4b5563', fontWeight: 600 }}>الاسم:</span>
+                    <div style={{ borderBottom: '1px solid #9ca3af', width: '80%', margin: '4px auto 0', height: '18px' }} />
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '11px', color: '#4b5563', fontWeight: 600 }}>التوقيع:</span>
+                    <div style={{ borderBottom: '1px solid #9ca3af', width: '80%', margin: '4px auto 0', height: '18px' }} />
+                  </div>
+                </div>
+                <div style={{ flex: 1, textAlign: 'center' }}>
+                  <p style={{ fontWeight: 700, color: '#1f2937', marginBottom: '16px', fontSize: '12px' }}>رئيس قسم الإعاقة</p>
+                  <div style={{ marginBottom: '10px' }}>
+                    <span style={{ fontSize: '11px', color: '#4b5563', fontWeight: 600 }}>الاسم: أحمد فرج خليفة</span>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '11px', color: '#4b5563', fontWeight: 600 }}>التوقيع:</span>
+                    <div style={{ borderBottom: '1px solid #9ca3af', width: '80%', margin: '4px auto 0', height: '18px' }} />
+                  </div>
+                </div>
               </div>
             </section>
-
-            <div className="page-footer">
+            <div style={{ borderTop: '1px solid #e5e7eb', marginTop: '12px', paddingTop: '6px', display: 'flex', justifyContent: 'flex-start', fontSize: '10px', color: '#9ca3af' }}>
               <span>قسم ذوي الإعاقة والاحتياجات الخاصة</span>
-              <span>صفحة 1 من 1</span>
             </div>
           </div>
         </div>
