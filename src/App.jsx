@@ -82,7 +82,7 @@ const localDb = {
     if (search) {
       const s = search.toLowerCase()
       data = data.filter(r =>
-        (r.mosque_name || r.facility_name || r.full_name || '').toLowerCase().includes(s)
+        (r.facility_name || r.mosque_name || r.full_name || '').toLowerCase().includes(s)
       )
     }
     if (type && type !== 'الكل') {
@@ -92,25 +92,11 @@ const localDb = {
   },
 }
 
-const FACILITY_NAMES = [
-  'دورات المياه وأماكن الوضوء', 'مدخل المسجد',
-  'المنحدرات وممرات ذوي الإعاقة', 'نظام الصوت',
-  'مسارات الحركة', 'أماكن مخصصة للكراسي المتحركة',
-  'اللوحات والوسائل الإرشادية', 'الوسائل المساعدة',
-  'التجهيزات الأخرى',
+const MOSQUE_AXES = [
+  { name: 'المسار الخارجي والدخول', description: '(المواقف، المنحدرات، العتبات)' },
+  { name: 'الحركة الداخلية والأبواب', description: '(اتساع الأبواب، غياب العوائق)' },
+  { name: 'المرافق الصحية والوضوء', description: '(دورات المياه، الصنابير، المقاعد)' },
 ]
-
-const FACILITY_DESCRIPTIONS = {
-  'دورات المياه وأماكن الوضوء': 'مدى ملاءمة دورات المياه وأماكن الوضوء لاستخدام الأشخاص ذوي الإعاقة',
-  'مدخل المسجد': 'سهولة الوصول إلى المسجد وخلو المدخل من العوائق',
-  'المنحدرات وممرات ذوي الإعاقة': 'توفر المنحدرات والممرات وسهولة استخدامها',
-  'نظام الصوت': 'وضوح الصوت داخل المسجد بما يخدم جميع المصلين',
-  'مسارات الحركة': 'توفر مسارات حركة مناسبة لذوي الإعاقة',
-  'أماكن مخصصة للكراسي المتحركة': 'وجود أماكن مخصصة للكراسي المتحركة',
-  'اللوحات والوسائل الإرشادية': 'توفر لوحات ووسائل إرشادية مناسبة',
-  'الوسائل المساعدة': 'توفر وسائل مساعدة عند الحاجة',
-  'التجهيزات الأخرى': 'أي تجهيزات أخرى تخدم الأشخاص ذوي الإعاقة',
-}
 
 const FACILITY_STATUSES = ['مناسب', 'يحتاج تحسين', 'غير متوفر', 'لا ينطبق']
 
@@ -262,19 +248,15 @@ const SegmentedControl = ({ options, value, onChange }) => (
   </div>
 )
 
-let FACILITY_EVALUATIONS_TEMP = {}
-const makeEmptyFacilityEvals = () => {
-  const obj = {}
-  FACILITY_NAMES.forEach(n => { obj[n] = { status: '', notes: '' } })
-  return obj
-}
+const initEvaluations = () => MOSQUE_AXES.map(a => ({ name: a.name, description: a.description, status: '', notes: '' }))
 
 export default function App() {
   const [mosqueForm, setMosqueForm] = useState(() => ({
     recordType: 'mosque',
-    mosque_name: '', region: '', visit_date: '',
-    facility_evaluations: makeEmptyFacilityEvals(),
-    general_notes: '', recommendations: '',
+    report_number: '', issue_date: new Date().toISOString().split('T')[0],
+    facility_name: '', region: '', visit_date: '', total_cases: '',
+    evaluations: initEvaluations(),
+    positives: '', negatives: '', recommendations: '',
   }))
 
   const [disabilityForm, setDisabilityForm] = useState({
@@ -346,14 +328,12 @@ export default function App() {
     setter(prev => ({ ...prev, [field]: value }))
   }
 
-  const handleFacilityEvalChange = (facilityName, field, value) => {
-    setMosqueForm(prev => ({
-      ...prev,
-      facility_evaluations: {
-        ...prev.facility_evaluations,
-        [facilityName]: { ...prev.facility_evaluations[facilityName], [field]: value },
-      },
-    }))
+  const handleEvalChange = (index, field, value) => {
+    setMosqueForm(prev => {
+      const evals = [...prev.evaluations]
+      evals[index] = { ...evals[index], [field]: value }
+      return { ...prev, evaluations: evals }
+    })
   }
 
   const handleNeedToggle = (need) => {
@@ -378,9 +358,10 @@ export default function App() {
     if (activeTab === 'tab1') {
       setMosqueForm({
         recordType: 'mosque',
-        mosque_name: '', region: '', visit_date: '',
-        facility_evaluations: makeEmptyFacilityEvals(),
-        general_notes: '', recommendations: '',
+        report_number: '', issue_date: new Date().toISOString().split('T')[0],
+        facility_name: '', region: '', visit_date: '', total_cases: '',
+        evaluations: initEvaluations(),
+        positives: '', negatives: '', recommendations: '',
       })
     } else {
       setDisabilityForm({
@@ -398,7 +379,7 @@ export default function App() {
   const validateForm = () => {
     if (currentForm.recordType === 'mosque') {
       if (!currentForm.visit_date) return 'تاريخ الزيارة مطلوب'
-      if (!currentForm.mosque_name.trim()) return 'اسم المسجد مطلوب'
+      if (!currentForm.facility_name.trim()) return 'اسم المرفق / المركز مطلوب'
     } else {
       if (!currentForm.full_name.trim()) return 'الاسم الرباعي مطلوب'
     }
@@ -412,6 +393,9 @@ export default function App() {
     try {
       const f = activeTab === 'tab1' ? mosqueForm : disabilityForm
       const payload = { ...f }
+      if (activeTab === 'tab1' && !payload.report_number) {
+        payload.report_number = Date.now().toString().slice(-6)
+      }
       const sb = getSupabase()
       let saved = false
       if (sb) {
@@ -448,10 +432,19 @@ export default function App() {
     if (isMosque) {
       setMosqueForm({
         recordType: 'mosque',
-        mosque_name: report.mosque_name || '',
+        report_number: report.report_number || '',
+        issue_date: report.issue_date || new Date().toISOString().split('T')[0],
+        facility_name: report.facility_name || report.mosque_name || '',
         region: report.region || '', visit_date: report.visit_date || '',
-        facility_evaluations: report.facility_evaluations || makeEmptyFacilityEvals(),
-        general_notes: report.general_notes || '', recommendations: report.recommendations || '',
+        total_cases: report.total_cases || '',
+        evaluations: Array.isArray(report.evaluations)
+          ? report.evaluations.map(e => ({ ...e }))
+          : report.facility_evaluations
+            ? Object.entries(report.facility_evaluations).map(([name, ev]) => ({ name, description: '', status: ev.status || '', notes: ev.notes || '' }))
+            : initEvaluations(),
+        positives: report.positives || report.general_notes || '',
+        negatives: report.negatives || '',
+        recommendations: report.recommendations || '',
       })
     } else {
       setDisabilityForm({
@@ -519,7 +512,6 @@ export default function App() {
       heightLeft -= pageHeight
     }
     doc.save(filename)
-    el.innerHTML = ''
     showToast('تم تصدير PDF بنجاح', 'success')
   }
 
@@ -536,72 +528,17 @@ export default function App() {
 
   const exportMosquePDF = async () => {
     const f = mosqueForm
-    if (!f.mosque_name.trim()) { showToast('يرجى إدخال اسم المسجد أولاً', 'warning'); return }
+    if (!f.facility_name.trim()) { showToast('يرجى إدخال اسم المرفق أولاً', 'warning'); return }
     setPdfExporting(true)
     try {
-      const todayIso = new Date().toISOString().split('T')[0]
-      const reportNum = Date.now().toString().slice(-6)
-      const facilities = FACILITY_NAMES.map(name => {
-        const ev = f.facility_evaluations[name] || {}
-        return { name, status: ev.status || '', notes: ev.notes || '' }
-      })
-      const desc = (name) => FACILITY_DESCRIPTIONS[name] || ''
-      const contentOrEmpty = (val) => val && val.trim() ? val : 'لم تسجل ملاحظات إضافية.'
-      const c = (val) => val && val.trim() ? val : '\u2014'
-      const el = mosquePdfRef.current
-      if (!el) throw new Error('Template ref not found')
-
-      el.innerHTML = `<div dir="rtl" style="width:794px;min-height:1123px;background:#fff;padding:0;font-family:Cairo,Traditonal Arabic,Arial,sans-serif;color:#111827;">
-<style>
-.a4-page{padding:15mm 18mm;position:relative}
-.page-footer{position:absolute;bottom:10mm;left:18mm;right:18mm;display:flex;justify-content:space-between;font-size:10px;color:#9ca3af;border-top:1px solid #e5e7eb;padding-top:4px;}
-@media print{body{background:#fff}}
-</style>
-<div class="a4-page">
-<header style="border-bottom:2px solid #1f2937;padding-bottom:12px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;">
-<div style="display:flex;align-items:center;gap:12px;"><div style="width:55px;height:55px;background:#e5e7eb;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;color:#6b7280;font-weight:700;border:2px solid #d1d5db;">شعار<br/>الجهة</div>
-<div style="text-align:right;"><h1 style="font-size:20px;font-weight:800;color:#111827;margin:0 0 2px;">نظام تقييم الوصول الشامل</h1><p style="font-size:13px;font-weight:600;color:#374151;margin:0;">قسم ذوي الإعاقة والاحتياجات الخاصة</p></div></div>
-<div style="text-align:left;font-size:11px;font-weight:600;color:#374151;"><div>رقم التقرير: <span style="font-family:monospace;">${reportNum}</span></div><div>تاريخ الإصدار: <span dir="ltr">${f.visit_date || todayIso}</span></div></div>
-</header>
-
-<section style="margin-bottom:18px;">
-<h2 style="font-size:15px;font-weight:700;color:#1f2937;margin:0 0 10px;border-right:4px solid #1f2937;padding-right:8px;">أولاً: بيانات الزيارة والمرفق</h2>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;border:1px solid #d1d5db;padding:12px;background:#f9fafb;font-size:12px;">
-<div><span style="font-weight:700;color:#6b7280;display:block;font-size:11px;">اسم المرفق / المركز</span><span style="font-size:14px;font-weight:700;color:#111827;">${f.mosque_name || '\u2014'}</span></div>
-<div><span style="font-weight:700;color:#6b7280;display:block;font-size:11px;">المنطقة / المحلة</span><span style="font-size:14px;font-weight:700;">${f.region || '\u2014'}</span></div>
-<div><span style="font-weight:700;color:#6b7280;display:block;font-size:11px;">تاريخ الزيارة الميدانية</span><span style="font-size:14px;font-weight:700;">${f.visit_date || '\u2014'}</span></div>
-</div>
-</section>
-
-<section style="margin-bottom:18px;">
-<h2 style="font-size:15px;font-weight:700;color:#1f2937;margin:0 0 10px;border-right:4px solid #1f2937;padding-right:8px;">ثانياً: نتائج التقييم الميداني</h2>
-<table style="width:100%;text-align:right;font-size:11px;border-collapse:collapse;">
-<thead><tr style="background:#f3f4f6;color:#1f2937;font-weight:700;"><th style="padding:7px;border:1px solid #d1d5db;width:50%;">محور التقييم</th><th style="padding:7px;border:1px solid #d1d5db;text-align:center;width:25%;">الحالة الفنية</th><th style="padding:7px;border:1px solid #d1d5db;">ملاحظات فريق الرصد</th></tr></thead>
-<tbody>${facilities.map((f, i) => `<tr><td style="padding:6px;border:1px solid #d1d5db;"><div style="font-weight:700;font-size:11px;color:#111827;">${f.name}</div><div style="font-weight:400;color:#6b7280;font-size:10px;margin-top:2px;">${desc(f.name)}</div></td><td style="padding:6px;border:1px solid #d1d5db;text-align:center;">${getStatusBadge(f.status)}</td><td style="padding:6px;border:1px solid #d1d5db;color:#4b5563;">${c(f.notes)}</td></tr>`).join('')}</tbody>
-</table>
-</section>
-
-<section style="margin-bottom:18px;">
-<h2 style="font-size:15px;font-weight:700;color:#1f2937;margin:0 0 10px;border-right:4px solid #1f2937;padding-right:8px;">ثالثاً: التفاصيل الإضافية والتوصيات</h2>
-<div style="border:1px solid #d1d5db;margin-bottom:8px;">
-<div style="background:#f3f4f6;padding:8px 12px;border-bottom:1px solid #d1d5db;font-weight:700;color:#1f2937;font-size:12px;">الإيجابيات والممارسات الجيدة</div>
-<div style="padding:10px 12px;font-size:12px;color:#4b5563;min-height:30px;">${contentOrEmpty(f.general_notes)}</div>
-</div>
-<div style="border:1px solid #d1d5db;">
-<div style="background:#f3f4f6;padding:8px 12px;border-bottom:1px solid #d1d5db;font-weight:700;color:#1f2937;font-size:12px;">التوصيات والاحتياجات الفعلية</div>
-<div style="padding:10px 12px;font-size:12px;color:#4b5563;min-height:30px;">${contentOrEmpty(f.recommendations)}</div>
-</div>
-</section>
-
-<section style="margin-top:40px;display:flex;justify-content:space-between;text-align:center;">
-<div style="width:45%;"><p style="font-weight:700;color:#1f2937;margin-bottom:18px;">مُعِد التقرير</p><p style="border-top:1px solid #9ca3af;padding-top:6px;font-size:11px;color:#4b5563;">الاسم: _______________ التوقيع: _______________</p><p style="font-size:10px;color:#9ca3af;margin-top:4px;">التاريخ: _______________</p></div>
-<div style="width:45%;"><p style="font-weight:700;color:#1f2937;margin-bottom:18px;">الاعتماد والمصادقة</p><p style="border-top:1px solid #9ca3af;padding-top:6px;font-size:11px;color:#4b5563;">الاسم: _______________ التوقيع: _______________</p><p style="font-size:10px;color:#9ca3af;margin-top:4px;">التاريخ: _______________ الختم: _______________</p></div>
-</section>
-
-<div class="page-footer"><span>قسم ذوي الإعاقة والاحتياجات الخاصة</span><span>صفحة 1 من 1</span></div>
-</div></div>`
-
-      await capturePdfFromRef(mosquePdfRef, `تقييم_مسجد_${f.mosque_name.replace(/\s+/g, '_')}.pdf`)
+      if (!f.report_number) {
+        const newNum = Date.now().toString().slice(-6)
+        await new Promise(resolve => {
+          setMosqueForm(prev => ({ ...prev, report_number: newNum }))
+          setTimeout(resolve, 100)
+        })
+      }
+      await capturePdfFromRef(mosquePdfRef, `تقييم_${f.facility_name.replace(/\s+/g, '_')}.pdf`)
     } catch (err) {
       console.error('PDF export error:', err)
       showToast('فشل في تصدير PDF - ' + err.message, 'error')
@@ -704,7 +641,7 @@ export default function App() {
 
   const exportFromArchive = async (report) => {
     const isMosque = report.recordType === 'mosque'
-    if (isMosque && !report.mosque_name) { showToast('بيانات التقرير غير مكتملة', 'warning'); return }
+    if (isMosque && !(report.facility_name || report.mosque_name)) { showToast('بيانات التقرير غير مكتملة', 'warning'); return }
     if (!isMosque && !report.full_name) { showToast('بيانات التقرير غير مكتملة', 'warning'); return }
     setPdfExporting(true)
     try {
@@ -715,12 +652,19 @@ export default function App() {
       if (!el) throw new Error('Template ref not found')
 
       if (isMosque) {
-        const facilities = FACILITY_NAMES.map(name => {
-          const ev = (report.facility_evaluations || {})[name] || {}
-          return { name, status: ev.status || '', notes: ev.notes || '' }
-        })
-        const desc = (name) => FACILITY_DESCRIPTIONS[name] || ''
+        const getEvaluations = () => {
+          if (Array.isArray(report.evaluations)) return report.evaluations.map(e => ({ name: e.name, description: e.description || '', status: e.status || '', notes: e.notes || '' }))
+          if (report.facility_evaluations) return MOSQUE_AXES.map(axis => {
+            const found = Object.entries(report.facility_evaluations).find(([k]) => k.includes(axis.name.slice(0, 4)))
+            const ev = found ? found[1] : {}
+            return { name: axis.name, description: axis.description, status: ev.status || '', notes: ev.notes || '' }
+          })
+          return MOSQUE_AXES.map(a => ({ name: a.name, description: a.description, status: '', notes: '' }))
+        }
+        const axes = getEvaluations()
         const c2 = (val) => val && val.trim() ? val : '\u2014'
+        const positives = report.positives || report.general_notes || ''
+        const negatives = report.negatives || ''
         el.innerHTML = `<div dir="rtl" style="width:794px;min-height:1123px;background:#fff;padding:0;font-family:Cairo,Traditonal Arabic,Arial,sans-serif;color:#111827;">
 <style>
 .a4-page{padding:15mm 18mm;position:relative}
@@ -728,31 +672,38 @@ export default function App() {
 @media print{body{background:#fff}}
 </style>
 <div class="a4-page">
-<header style="border-bottom:2px solid #1f2937;padding-bottom:12px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;">
-<div style="display:flex;align-items:center;gap:12px;"><div style="width:55px;height:55px;background:#e5e7eb;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;color:#6b7280;font-weight:700;border:2px solid #d1d5db;">شعار<br/>الجهة</div>
-<div style="text-align:right;"><h1 style="font-size:20px;font-weight:800;color:#111827;margin:0 0 2px;">نظام تقييم الوصول الشامل</h1><p style="font-size:13px;font-weight:600;color:#374151;margin:0;">قسم ذوي الإعاقة والاحتياجات الخاصة</p></div></div>
-<div style="text-align:left;font-size:11px;font-weight:600;color:#374151;"><div>رقم التقرير: <span style="font-family:monospace;">${reportNum}</span></div><div>تاريخ الإصدار: <span dir="ltr">${report.visit_date || todayIso}</span></div></div>
+<header style="border-bottom:2px solid #1f2937;padding-bottom:12px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:flex-end;">
+<div style="text-align:right;">
+<h1 style="font-size:20px;font-weight:800;color:#111827;margin:0 0 2px;">نظام تقييم الوصول الشامل</h1>
+<p style="font-size:13px;font-weight:600;color:#374151;margin:0;">قسم ذوي الإعاقة والاحتياجات الخاصة</p>
+</div>
+<div style="text-align:left;font-size:11px;font-weight:600;color:#374151;"><div>رقم التقرير: <span style="font-family:monospace;">${reportNum}</span></div><div>تاريخ الإصدار: <span dir="ltr">${report.issue_date || report.visit_date || todayIso}</span></div></div>
 </header>
 <section style="margin-bottom:18px;">
 <h2 style="font-size:15px;font-weight:700;color:#1f2937;margin:0 0 10px;border-right:4px solid #1f2937;padding-right:8px;">أولاً: بيانات الزيارة والمرفق</h2>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;border:1px solid #d1d5db;padding:12px;background:#f9fafb;font-size:12px;">
-<div style="grid-column:span 2;"><span style="font-weight:700;color:#6b7280;display:block;font-size:11px;">اسم المرفق / المركز</span><span style="font-size:14px;font-weight:700;color:#111827;">${report.mosque_name || '\u2014'}</span></div>
-<div><span style="font-weight:700;color:#6b7280;display:block;font-size:11px;">المنطقة / المحلة</span><span style="font-size:14px;font-weight:700;">${report.region || '\u2014'}</span></div>
-<div><span style="font-weight:700;color:#6b7280;display:block;font-size:11px;">تاريخ الزيارة الميدانية</span><span style="font-size:14px;font-weight:700;">${report.visit_date || '\u2014'}</span></div>
+<div style="flex-direction:column;"><span style="font-weight:700;color:#6b7280;display:block;font-size:11px;">اسم المرفق / المركز</span><span style="font-size:14px;font-weight:700;color:#111827;">${c2(report.facility_name || report.mosque_name)}</span></div>
+<div style="flex-direction:column;"><span style="font-weight:700;color:#6b7280;display:block;font-size:11px;">المنطقة / المحلة</span><span style="font-size:14px;font-weight:700;">${c2(report.region)}</span></div>
+<div style="flex-direction:column;"><span style="font-weight:700;color:#6b7280;display:block;font-size:11px;">تاريخ الزيارة الميدانية</span><span style="font-size:14px;font-weight:700;">${report.visit_date || '\u2014'}</span></div>
+<div style="flex-direction:column;"><span style="font-weight:700;color:#6b7280;display:block;font-size:11px;">إجمالي الحالات المرصودة</span><span style="font-size:14px;font-weight:700;">${report.total_cases ? report.total_cases + ' حالات' : '\u2014'}</span></div>
 </div>
 </section>
 <section style="margin-bottom:18px;">
 <h2 style="font-size:15px;font-weight:700;color:#1f2937;margin:0 0 10px;border-right:4px solid #1f2937;padding-right:8px;">ثانياً: نتائج التقييم الميداني</h2>
 <table style="width:100%;text-align:right;font-size:11px;border-collapse:collapse;">
 <thead><tr style="background:#f3f4f6;color:#1f2937;font-weight:700;"><th style="padding:7px;border:1px solid #d1d5db;width:50%;">محور التقييم</th><th style="padding:7px;border:1px solid #d1d5db;text-align:center;width:25%;">الحالة الفنية</th><th style="padding:7px;border:1px solid #d1d5db;">ملاحظات فريق الرصد</th></tr></thead>
-<tbody>${facilities.map((f, i) => `<tr><td style="padding:6px;border:1px solid #d1d5db;"><div style="font-weight:700;font-size:11px;color:#111827;">${f.name}</div><div style="font-weight:400;color:#6b7280;font-size:10px;margin-top:2px;">${desc(f.name)}</div></td><td style="padding:6px;border:1px solid #d1d5db;text-align:center;">${getStatusBadge(f.status)}</td><td style="padding:6px;border:1px solid #d1d5db;color:#4b5563;">${c2(f.notes)}</td></tr>`).join('')}</tbody>
+<tbody>${axes.map((a) => `<tr><td style="padding:6px;border:1px solid #d1d5db;"><div style="font-weight:700;font-size:11px;color:#111827;">${a.name}</div><div style="font-weight:400;color:#6b7280;font-size:10px;margin-top:2px;">${a.description}</div></td><td style="padding:6px;border:1px solid #d1d5db;text-align:center;">${getStatusBadge(a.status)}</td><td style="padding:6px;border:1px solid #d1d5db;color:#4b5563;">${c2(a.notes)}</td></tr>`).join('')}</tbody>
 </table>
 </section>
 <section style="margin-bottom:18px;">
 <h2 style="font-size:15px;font-weight:700;color:#1f2937;margin:0 0 10px;border-right:4px solid #1f2937;padding-right:8px;">ثالثاً: التفاصيل الإضافية والتوصيات</h2>
 <div style="border:1px solid #d1d5db;margin-bottom:8px;">
 <div style="background:#f3f4f6;padding:8px 12px;border-bottom:1px solid #d1d5db;font-weight:700;color:#1f2937;font-size:12px;">الإيجابيات والممارسات الجيدة</div>
-<div style="padding:10px 12px;font-size:12px;color:#4b5563;min-height:30px;">${c2(report.general_notes)}</div>
+<div style="padding:10px 12px;font-size:12px;color:#4b5563;min-height:30px;">${c2(positives)}</div>
+</div>
+<div style="border:1px solid #d1d5db;margin-bottom:8px;">
+<div style="background:#f3f4f6;padding:8px 12px;border-bottom:1px solid #d1d5db;font-weight:700;color:#1f2937;font-size:12px;">السلبيات والعوائق المرصودة</div>
+<div style="padding:10px 12px;font-size:12px;color:#4b5563;min-height:30px;">${c2(negatives)}</div>
 </div>
 <div style="border:1px solid #d1d5db;">
 <div style="background:#f3f4f6;padding:8px 12px;border-bottom:1px solid #d1d5db;font-weight:700;color:#1f2937;font-size:12px;">التوصيات والاحتياجات الفعلية</div>
@@ -851,7 +802,7 @@ ${c2(report.general_notes)}
       }
 
       const pdfName = isMosque
-        ? `تقييم_مسجد_${(report.mosque_name || 'report').replace(/\s+/g, '_')}`
+        ? `تقييم_${(report.facility_name || report.mosque_name || 'report').replace(/\s+/g, '_')}`
         : `تقييم_حالة_${(report.full_name || 'report').replace(/\s+/g, '_')}`
       await capturePdfFromRef(pdfTemplateRef, `${pdfName}.pdf`)
     } catch (err) {
@@ -885,7 +836,11 @@ ${c2(report.general_notes)}
 
     const statusCounts = { 'مناسب': 0, 'يحتاج تحسين': 0, 'غير متوفر': 0, 'لا ينطبق': 0 }
     mosques.forEach(m => {
-      if (m.facility_evaluations) {
+      if (Array.isArray(m.evaluations)) {
+        m.evaluations.forEach(ev => {
+          if (ev.status && statusCounts[ev.status] !== undefined) statusCounts[ev.status]++
+        })
+      } else if (m.facility_evaluations) {
         Object.values(m.facility_evaluations).forEach(ev => {
           if (ev.status && statusCounts[ev.status] !== undefined) statusCounts[ev.status]++
         })
@@ -1046,7 +1001,7 @@ ${c2(report.general_notes)}
     } catch { return dateStr }
   }
 
-  const getReportName = (report) => report.mosque_name || report.facility_name || report.full_name || '\u2014'
+  const getReportName = (report) => report.facility_name || report.mosque_name || report.full_name || '\u2014'
 
   const renderArchive = (type) => {
     const isMosque = type === 'mosque'
@@ -1060,7 +1015,7 @@ ${c2(report.general_notes)}
       if (r.recordType !== type) return false
       if (!search.trim()) return true
       const s = search.trim().toLowerCase()
-      const name = (r.mosque_name || r.full_name || '').toLowerCase()
+      const name = (r.facility_name || r.mosque_name || r.full_name || '').toLowerCase()
       return name.includes(s)
     })
     const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE))
@@ -1231,43 +1186,49 @@ ${c2(report.general_notes)}
 
         {/* ============ TAB 1: MOSQUE ============ */}
         {activeTab === 'tab1' && (<>
-        {/* Mosque Data */}
+        {/* Visit & Facility Data */}
         <GlassCard className="mb-6">
           <div className="px-6 sm:px-10 py-6 sm:py-8">
             <div className="flex items-center gap-3 mb-6">
               <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 border border-cyan-500/30"><Building2 className="w-4 h-4 text-cyan-400" /></div>
-              <h2 className="text-xl font-bold text-white">أولاً: بيانات المسجد</h2>
+              <h2 className="text-xl font-bold text-white">أولاً: بيانات الزيارة والمرفق</h2>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              <GlassInput label="اسم المسجد" icon={Building2} required value={currentForm.mosque_name} onChange={(e) => handleChange('mosque_name', e.target.value)} placeholder="أدخل اسم المسجد" />
-              <GlassInput label="المنطقة" icon={MapPin} value={currentForm.region} onChange={(e) => handleChange('region', e.target.value)} placeholder="المنطقة" />
-              <GlassInput label="تاريخ الزيارة" icon={Calendar} required>
+              <GlassInput label="رقم التقرير" icon={FileText} value={currentForm.report_number} onChange={(e) => handleChange('report_number', e.target.value)} placeholder="يُولد تلقائياً" />
+              <GlassInput label="تاريخ الإصدار" icon={Calendar}>
+                <input type="date" value={currentForm.issue_date} onChange={(e) => handleChange('issue_date', e.target.value)}
+                  className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-gray-300 outline-none transition-all duration-300 focus:border-cyan-500/50 focus:bg-white/[0.06] [&::-webkit-calendar-picker-indicator]:filter [&::-webkit-calendar-picker-indicator]:invert-[0.7]" />
+              </GlassInput>
+              <GlassInput label="اسم المرفق / المركز" icon={Building2} required value={currentForm.facility_name} onChange={(e) => handleChange('facility_name', e.target.value)} placeholder="أدخل اسم المرفق" />
+              <GlassInput label="المنطقة / المحلة" icon={MapPin} value={currentForm.region} onChange={(e) => handleChange('region', e.target.value)} placeholder="المنطقة" />
+              <GlassInput label="تاريخ الزيارة الميدانية" icon={Calendar} required>
                 <input type="date" value={currentForm.visit_date} onChange={(e) => handleChange('visit_date', e.target.value)}
                   className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-gray-300 outline-none transition-all duration-300 focus:border-cyan-500/50 focus:bg-white/[0.06] [&::-webkit-calendar-picker-indicator]:filter [&::-webkit-calendar-picker-indicator]:invert-[0.7]" />
               </GlassInput>
+              <GlassInput label="إجمالي الحالات المرصودة" icon={Users} type="number" value={currentForm.total_cases} onChange={(e) => handleChange('total_cases', e.target.value)} placeholder="عدد الحالات" />
             </div>
           </div>
         </GlassCard>
 
-        {/* Facility Evaluation Cards */}
+        {/* Evaluation Axes (3 only) */}
         <GlassCard className="mb-6">
           <div className="px-6 sm:px-10 py-6 sm:py-8">
             <div className="flex items-center gap-3 mb-6">
               <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 border border-cyan-500/30"><ListChecks className="w-4 h-4 text-cyan-400" /></div>
-              <h2 className="text-xl font-bold text-white">ثانياً: تقييم مرافق المسجد لذوي الإعاقة</h2>
+              <h2 className="text-xl font-bold text-white">ثانياً: نتائج التقييم الميداني</h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {FACILITY_NAMES.map((name) => {
-                const evalItem = currentForm.facility_evaluations[name] || { status: '', notes: '' }
+              {MOSQUE_AXES.map((axis, idx) => {
+                const evalItem = currentForm.evaluations[idx] || { status: '', notes: '' }
                 return (
-                  <GlassCard key={name}>
+                  <GlassCard key={axis.name}>
                     <div className="p-4">
-                      <h3 className="text-white font-bold text-sm mb-1">{name}</h3>
-                      <p className="text-gray-500 text-xs mb-3 leading-relaxed">{FACILITY_DESCRIPTIONS[name]}</p>
+                      <h3 className="text-white font-bold text-sm mb-1">{axis.name}</h3>
+                      <p className="text-gray-500 text-xs mb-3 leading-relaxed">{axis.description}</p>
                       <div className="flex flex-wrap gap-2 mb-3">
                         {FACILITY_STATUSES.map((status) => (
                           <button key={status} type="button"
-                            onClick={() => handleFacilityEvalChange(name, 'status', evalItem.status === status ? '' : status)}
+                            onClick={() => handleEvalChange(idx, 'status', evalItem.status === status ? '' : status)}
                             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 border
                               ${evalItem.status === status
                                 ? FACILITY_STATUS_COLORS[status]
@@ -1277,8 +1238,8 @@ ${c2(report.general_notes)}
                           </button>
                         ))}
                       </div>
-                      <textarea value={evalItem.notes} onChange={(e) => handleFacilityEvalChange(name, 'notes', e.target.value)}
-                        placeholder="ملاحظات..." rows={2}
+                      <textarea value={evalItem.notes} onChange={(e) => handleEvalChange(idx, 'notes', e.target.value)}
+                        placeholder="ملاحظات فريق الرصد..." rows={2}
                         className="w-full bg-white/[0.03] border border-white/[0.06] rounded-lg px-3 py-2 text-white text-sm placeholder-gray-500 outline-none transition-all resize-none focus:border-cyan-500/30 focus:bg-white/[0.05]" />
                     </div>
                   </GlassCard>
@@ -1288,16 +1249,17 @@ ${c2(report.general_notes)}
           </div>
         </GlassCard>
 
-        {/* Final Evaluation */}
+        {/* Positives / Negatives / Recommendations */}
         <GlassCard className="mb-6">
           <div className="px-6 sm:px-10 py-6 sm:py-8">
             <div className="flex items-center gap-3 mb-6">
               <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 border border-cyan-500/30"><FileCheck className="w-4 h-4 text-cyan-400" /></div>
-              <h2 className="text-xl font-bold text-white">ثالثاً: التقييم النهائي</h2>
+              <h2 className="text-xl font-bold text-white">ثالثاً: التفاصيل الإضافية والتوصيات</h2>
             </div>
             <div className="space-y-4">
-              <GlassTextarea label="ملاحظات عامة" icon={FileText} value={currentForm.general_notes} onChange={(e) => handleChange('general_notes', e.target.value)} placeholder="أكتب ملاحظات عامة..." />
-              <GlassTextarea label="التوصيات" icon={Lightbulb} value={currentForm.recommendations} onChange={(e) => handleChange('recommendations', e.target.value)} placeholder="أكتب التوصيات..." />
+              <GlassTextarea label="الإيجابيات والممارسات الجيدة" icon={ThumbsUp} value={currentForm.positives} onChange={(e) => handleChange('positives', e.target.value)} placeholder="أدخل الإيجابيات..." />
+              <GlassTextarea label="السلبيات والعوائق المرصودة" icon={ThumbsDown} value={currentForm.negatives} onChange={(e) => handleChange('negatives', e.target.value)} placeholder="أدخل السلبيات..." />
+              <GlassTextarea label="التوصيات والاحتياجات الفعلية" icon={Lightbulb} value={currentForm.recommendations} onChange={(e) => handleChange('recommendations', e.target.value)} placeholder="أدخل التوصيات..." />
             </div>
           </div>
         </GlassCard>
@@ -1629,17 +1591,20 @@ ${c2(report.general_notes)}
               {viewReport.recordType === 'mosque' ? (
                 <div className="space-y-5">
                   <div className="grid grid-cols-2 gap-4">
-                    <div><span className="text-xs text-gray-500 block">اسم المسجد</span><span className="text-white font-medium">{viewReport.mosque_name || '—'}</span></div>
-                    <div><span className="text-xs text-gray-500 block">المنطقة</span><span className="text-white font-medium">{viewReport.region || '—'}</span></div>
-                    <div><span className="text-xs text-gray-500 block">تاريخ الزيارة</span><span className="text-white font-medium">{formatDate(viewReport.visit_date)}</span></div>
+                    <div><span className="text-xs text-gray-500 block">رقم التقرير</span><span className="text-white font-medium">{viewReport.report_number || '—'}</span></div>
+                    <div><span className="text-xs text-gray-500 block">تاريخ الإصدار</span><span className="text-white font-medium">{formatDate(viewReport.issue_date || viewReport.visit_date)}</span></div>
+                    <div><span className="text-xs text-gray-500 block">اسم المرفق / المركز</span><span className="text-white font-medium">{viewReport.facility_name || viewReport.mosque_name || '—'}</span></div>
+                    <div><span className="text-xs text-gray-500 block">المنطقة / المحلة</span><span className="text-white font-medium">{viewReport.region || '—'}</span></div>
+                    <div><span className="text-xs text-gray-500 block">تاريخ الزيارة الميدانية</span><span className="text-white font-medium">{formatDate(viewReport.visit_date)}</span></div>
+                    <div><span className="text-xs text-gray-500 block">إجمالي الحالات المرصودة</span><span className="text-white font-medium">{viewReport.total_cases || '—'}</span></div>
                   </div>
-                  {viewReport.facility_evaluations && (
+                  {(Array.isArray(viewReport.evaluations) || viewReport.facility_evaluations) && (
                     <div>
-                      <span className="text-xs text-gray-500 block mb-2">تقييم مرافق المسجد لذوي الإعاقة</span>
+                      <span className="text-xs text-gray-500 block mb-2">نتائج التقييم الميداني</span>
                       <div className="space-y-2 max-h-60 overflow-y-auto">
-                        {Object.entries(viewReport.facility_evaluations).map(([name, ev]) => (
-                          <div key={name} className="bg-white/[0.02] rounded-xl p-3 border border-white/[0.04]">
-                            <span className="text-white text-sm font-medium">{name}</span>
+                        {(Array.isArray(viewReport.evaluations) ? viewReport.evaluations : Object.entries(viewReport.facility_evaluations).map(([name, ev]) => ({ name, status: ev.status, notes: ev.notes }))).map((ev, i) => (
+                          <div key={i} className="bg-white/[0.02] rounded-xl p-3 border border-white/[0.04]">
+                            <span className="text-white text-sm font-medium">{ev.name}</span>
                             <div className="flex items-center gap-3 mt-1">
                               {ev?.status && (
                                 <span className={`text-xs px-2 py-0.5 rounded-full border
@@ -1656,11 +1621,14 @@ ${c2(report.general_notes)}
                       </div>
                     </div>
                   )}
-                  {viewReport.general_notes && (
-                    <div><span className="text-xs text-gray-500 block mb-1">ملاحظات عامة</span><p className="text-white/80 text-sm bg-white/[0.02] rounded-xl p-3 border border-white/[0.04]">{viewReport.general_notes}</p></div>
+                  {(viewReport.positives || viewReport.general_notes) && (
+                    <div><span className="text-xs text-gray-500 block mb-1">الإيجابيات والممارسات الجيدة</span><p className="text-white/80 text-sm bg-white/[0.02] rounded-xl p-3 border border-white/[0.04]">{viewReport.positives || viewReport.general_notes}</p></div>
+                  )}
+                  {viewReport.negatives && (
+                    <div><span className="text-xs text-gray-500 block mb-1">السلبيات والعوائق المرصودة</span><p className="text-white/80 text-sm bg-white/[0.02] rounded-xl p-3 border border-white/[0.04]">{viewReport.negatives}</p></div>
                   )}
                   {viewReport.recommendations && (
-                    <div><span className="text-xs text-gray-500 block mb-1">التوصيات</span><p className="text-white/80 text-sm bg-white/[0.02] rounded-xl p-3 border border-white/[0.04]">{viewReport.recommendations}</p></div>
+                    <div><span className="text-xs text-gray-500 block mb-1">التوصيات والاحتياجات الفعلية</span><p className="text-white/80 text-sm bg-white/[0.02] rounded-xl p-3 border border-white/[0.04]">{viewReport.recommendations}</p></div>
                   )}
                 </div>
               ) : (
@@ -1696,7 +1664,120 @@ ${c2(report.general_notes)}
         </div>
       )}
 
-      {/* Hidden PDF Template */}
+      {/* Hidden PDF Template — Mosque (React JSX version of official HTML) */}
+      <div ref={mosquePdfRef}
+        style={{ position: 'absolute', left: '-9999px', top: '0', width: '794px', overflow: 'hidden', zIndex: -1 }}>
+        <div dir="rtl" style={{ width: '794px', minHeight: '1123px', background: '#ffffff', padding: 0, fontFamily: 'Cairo, Traditional Arabic, Arial, sans-serif', color: '#111827' }}>
+          <style>{`
+            .a4-page{padding:15mm 18mm;position:relative}
+            .page-footer{position:absolute;bottom:10mm;left:18mm;right:18mm;display:flex;justify-content:space-between;font-size:10px;color:#9ca3af;border-top:1px solid #e5e7eb;padding-top:4px;}
+          `}</style>
+          <div className="a4-page">
+            <header style={{ borderBottom: '2px solid #1f2937', paddingBottom: '12px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+              <div style={{ textAlign: 'right' }}>
+                <h1 style={{ fontSize: '20px', fontWeight: 800, color: '#111827', margin: '0 0 2px' }}>نظام تقييم الوصول الشامل</h1>
+                <p style={{ fontSize: '13px', fontWeight: 600, color: '#374151', margin: 0 }}>قسم ذوي الإعاقة والاحتياجات الخاصة</p>
+              </div>
+              <div style={{ textAlign: 'left', fontSize: '11px', fontWeight: 600, color: '#374151' }}>
+                <div>رقم التقرير: <span style={{ fontFamily: 'monospace' }}>{mosqueForm.report_number || '———'}</span></div>
+                <div>تاريخ الإصدار: <span dir="ltr">{mosqueForm.issue_date || new Date().toISOString().split('T')[0]}</span></div>
+              </div>
+            </header>
+
+            <section style={{ marginBottom: '18px' }}>
+              <h2 style={{ fontSize: '15px', fontWeight: 700, color: '#1f2937', margin: '0 0 10px', borderRight: '4px solid #1f2937', paddingRight: '8px' }}>أولاً: بيانات الزيارة والمرفق</h2>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', border: '1px solid #d1d5db', padding: '12px', background: '#f9fafb', fontSize: '12px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span style={{ fontWeight: 700, color: '#6b7280', fontSize: '11px' }}>اسم المرفق / المركز</span>
+                  <span style={{ fontSize: '14px', fontWeight: 700, color: '#111827' }}>{mosqueForm.facility_name || '\u2014'}</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span style={{ fontWeight: 700, color: '#6b7280', fontSize: '11px' }}>المنطقة / المحلة</span>
+                  <span style={{ fontSize: '14px', fontWeight: 700 }}>{mosqueForm.region || '\u2014'}</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span style={{ fontWeight: 700, color: '#6b7280', fontSize: '11px' }}>تاريخ الزيارة الميدانية</span>
+                  <span style={{ fontSize: '14px', fontWeight: 700 }}>{mosqueForm.visit_date || '\u2014'}</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span style={{ fontWeight: 700, color: '#6b7280', fontSize: '11px' }}>إجمالي الحالات المرصودة</span>
+                  <span style={{ fontSize: '14px', fontWeight: 700 }}>{mosqueForm.total_cases ? mosqueForm.total_cases + ' حالات' : '\u2014'}</span>
+                </div>
+              </div>
+            </section>
+
+            <section style={{ marginBottom: '18px' }}>
+              <h2 style={{ fontSize: '15px', fontWeight: 700, color: '#1f2937', margin: '0 0 10px', borderRight: '4px solid #1f2937', paddingRight: '8px' }}>ثانياً: نتائج التقييم الميداني</h2>
+              <table style={{ width: '100%', textAlign: 'right', fontSize: '11px', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ background: '#f3f4f6', color: '#1f2937', fontWeight: 700 }}>
+                    <th style={{ padding: '7px', border: '1px solid #d1d5db', width: '50%' }}>محور التقييم</th>
+                    <th style={{ padding: '7px', border: '1px solid #d1d5db', textAlign: 'center', width: '25%' }}>الحالة الفنية</th>
+                    <th style={{ padding: '7px', border: '1px solid #d1d5db' }}>ملاحظات فريق الرصد</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {mosqueForm.evaluations.map((ev, i) => (
+                    <tr key={i}>
+                      <td style={{ padding: '6px', border: '1px solid #d1d5db' }}>
+                        <div style={{ fontWeight: 700, fontSize: '11px', color: '#111827' }}>{ev.name}</div>
+                        <div style={{ fontWeight: 400, color: '#6b7280', fontSize: '10px', marginTop: '2px' }}>{ev.description}</div>
+                      </td>
+                      <td style={{ padding: '6px', border: '1px solid #d1d5db', textAlign: 'center' }}>
+                        <span style={{
+                          background: ev.status === 'مناسب' ? '#dcfce7' : ev.status === 'يحتاج تحسين' ? '#fef9c3' : ev.status === 'غير متوفر' ? '#fee2e2' : '#f3f4f6',
+                          color: ev.status === 'مناسب' ? '#166534' : ev.status === 'يحتاج تحسين' ? '#854d0e' : ev.status === 'غير متوفر' ? '#991b1b' : '#6b7280',
+                          border: `1px solid ${ev.status === 'مناسب' ? '#bbf7d0' : ev.status === 'يحتاج تحسين' ? '#fde047' : ev.status === 'غير متوفر' ? '#fecaca' : '#d1d5db'}`,
+                          fontWeight: 700, padding: '2px 10px', borderRadius: '2px', fontSize: '11px'
+                        }}>{ev.status || '\u2014'}</span>
+                      </td>
+                      <td style={{ padding: '6px', border: '1px solid #d1d5db', color: '#4b5563' }}>{ev.notes || '\u2014'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </section>
+
+            <section style={{ marginBottom: '18px' }}>
+              <h2 style={{ fontSize: '15px', fontWeight: 700, color: '#1f2937', margin: '0 0 10px', borderRight: '4px solid #1f2937', paddingRight: '8px' }}>ثالثاً: التفاصيل الإضافية والتوصيات</h2>
+              <div style={{ border: '1px solid #d1d5db', marginBottom: '8px' }}>
+                <div style={{ background: '#f3f4f6', padding: '8px 12px', borderBottom: '1px solid #d1d5db', fontWeight: 700, color: '#1f2937', fontSize: '12px' }}>الإيجابيات والممارسات الجيدة</div>
+                <div style={{ padding: '10px 12px', fontSize: '12px', color: '#4b5563', minHeight: '30px' }}>{mosqueForm.positives || 'لم تسجل ملاحظات إضافية.'}</div>
+              </div>
+              <div style={{ border: '1px solid #d1d5db', marginBottom: '8px' }}>
+                <div style={{ background: '#f3f4f6', padding: '8px 12px', borderBottom: '1px solid #d1d5db', fontWeight: 700, color: '#1f2937', fontSize: '12px' }}>السلبيات والعوائق المرصودة</div>
+                <div style={{ padding: '10px 12px', fontSize: '12px', color: '#4b5563', minHeight: '30px' }}>{mosqueForm.negatives || 'لم تسجل ملاحظات إضافية.'}</div>
+              </div>
+              <div style={{ border: '1px solid #d1d5db' }}>
+                <div style={{ background: '#f3f4f6', padding: '8px 12px', borderBottom: '1px solid #d1d5db', fontWeight: 700, color: '#1f2937', fontSize: '12px' }}>التوصيات والاحتياجات الفعلية</div>
+                <div style={{ padding: '10px 12px', fontSize: '12px', color: '#4b5563', minHeight: '30px' }}>{mosqueForm.recommendations || 'لم تسجل ملاحظات إضافية.'}</div>
+              </div>
+            </section>
+
+            <section style={{ marginTop: '40px', display: 'flex', justifyContent: 'space-between', textAlign: 'center' }}>
+              <div style={{ width: '45%' }}>
+                <p style={{ fontWeight: 700, color: '#1f2937', marginBottom: '18px' }}>مُعِد التقرير</p>
+                <p style={{ borderTop: '1px solid #9ca3af', paddingTop: '6px', fontSize: '11px', color: '#4b5563' }}>الاسم: _______________ التوقيع: _______________</p>
+                <p style={{ fontSize: '10px', color: '#9ca3af', marginTop: '4px' }}>التاريخ: _______________</p>
+              </div>
+              <div style={{ width: '45%' }}>
+                <p style={{ fontWeight: 700, color: '#1f2937', marginBottom: '18px' }}>الاعتماد والمصادقة</p>
+                <p style={{ borderTop: '1px solid #9ca3af', paddingTop: '6px', fontSize: '11px', color: '#4b5563' }}>الاسم: _______________ التوقيع: _______________</p>
+                <p style={{ fontSize: '10px', color: '#9ca3af', marginTop: '4px' }}>التاريخ: _______________ الختم: _______________</p>
+              </div>
+            </section>
+
+            <div className="page-footer">
+              <span>قسم ذوي الإعاقة والاحتياجات الخاصة</span>
+              <span>صفحة 1 من 1</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div ref={disabilityPdfRef}
+        style={{ position: 'absolute', left: '-9999px', top: '0', width: '794px', overflow: 'hidden', zIndex: -1 }} />
+      <div ref={dashboardPdfRef}
+        style={{ position: 'absolute', left: '-9999px', top: '0', width: '794px', overflow: 'hidden', zIndex: -1 }} />
       <div ref={pdfTemplateRef}
         style={{ position: 'absolute', left: '-9999px', top: '0', width: '794px', overflow: 'hidden', zIndex: -1 }} />
 
