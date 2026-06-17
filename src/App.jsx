@@ -720,16 +720,6 @@ export default function App() {
           return { name, status: ev.status || '', notes: ev.notes || '' }
         })
         const desc = (name) => FACILITY_DESCRIPTIONS[name] || ''
-        const statusBadge = (s) => {
-          const colors = {
-            'مناسب': 'background:#dcfce7;color:#166534;',
-            'يحتاج تحسين': 'background:#fef9c3;color:#854d0e;',
-            'غير متوفر': 'background:#fee2e2;color:#991b1b;',
-            'لا ينطبق': 'background:#f3f4f6;color:#6b7280;',
-          }
-          if (s && colors[s]) return `<span style="${colors[s]}font-weight:700;padding:2px 10px;border-radius:2px;font-size:11px;">${s}</span>`
-          return '<span style="color:#9ca3af;font-size:11px;">\u2014</span>'
-        }
         const c2 = (val) => val && val.trim() ? val : '\u2014'
         el.innerHTML = `<div dir="rtl" style="width:794px;min-height:1123px;background:#fff;padding:0;font-family:Cairo,Traditonal Arabic,Arial,sans-serif;color:#111827;">
 <style>
