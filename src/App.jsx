@@ -860,30 +860,10 @@ ${c2(report.general_notes)}
 </div></div>`
       }
 
-      await document.fonts.ready
-      await new Promise(r => setTimeout(r, 500))
-      const canvas = await html2canvas(el, { scale: 2, backgroundColor: '#ffffff', logging: false, useCORS: true, windowWidth: 794, width: 794, height: el.scrollHeight })
-      const imgData = canvas.toDataURL('image/png')
-      const imgWidth = 190
-      const imgHeight = (canvas.height * imgWidth) / canvas.width
-      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
-      let heightLeft = imgHeight
-      let position = 0
-      const pageHeight = 297
-      doc.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight, undefined, 'FAST')
-      heightLeft -= pageHeight
-      while (heightLeft > 0) {
-        position -= pageHeight
-        doc.addPage()
-        doc.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight, undefined, 'FAST')
-        heightLeft -= pageHeight
-      }
       const pdfName = isMosque
         ? `تقييم_مسجد_${(report.mosque_name || 'report').replace(/\s+/g, '_')}`
         : `تقييم_حالة_${(report.full_name || 'report').replace(/\s+/g, '_')}`
-      doc.save(`${pdfName}.pdf`)
-      el.innerHTML = ''
-      showToast('تم تصدير PDF بنجاح', 'success')
+      await capturePdfFromRef(pdfTemplateRef, `${pdfName}.pdf`)
     } catch (err) {
       console.error('Archive PDF export error:', err)
       showToast('فشل في تصدير PDF - ' + err.message, 'error')
@@ -1059,27 +1039,7 @@ ${c2(report.general_notes)}
 <div class="page-footer"><span>قسم ذوي الإعاقة والاحتياجات الخاصة</span><span>صفحة 1 من 1</span></div>
 </div></div>`
 
-      await document.fonts.ready
-      await new Promise(r => setTimeout(r, 500))
-      const canvas = await html2canvas(el, { scale: 2, backgroundColor: '#ffffff', logging: false, useCORS: true, windowWidth: 794, width: 794, height: el.scrollHeight })
-      const imgData = canvas.toDataURL('image/png')
-      const imgWidth = 190
-      const imgHeight = (canvas.height * imgWidth) / canvas.width
-      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
-      let heightLeft = imgHeight
-      let position = 0
-      const pageHeight = 297
-      doc.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight, undefined, 'FAST')
-      heightLeft -= pageHeight
-      while (heightLeft > 0) {
-        position -= pageHeight
-        doc.addPage()
-        doc.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight, undefined, 'FAST')
-        heightLeft -= pageHeight
-      }
-      doc.save(`تقرير_دوري_${dashboardStats.startDate}_${dashboardStats.endDate}.pdf`)
-      el.innerHTML = ''
-      showToast('تم تصدير تقرير PDF بنجاح', 'success')
+      await capturePdfFromRef(dashboardPdfRef, `تقرير_دوري_${dashboardStats.startDate}_${dashboardStats.endDate}.pdf`)
     } catch (err) {
       console.error('Dashboard PDF export error:', err)
       showToast('فشل في تصدير PDF - ' + err.message, 'error')
