@@ -289,6 +289,9 @@ export default function App() {
 
   const currentForm = activeTab === 'tab1' ? mosqueForm : disabilityForm
   const pdfTemplateRef = useRef(null)
+  const mosquePdfRef = useRef(null)
+  const disabilityPdfRef = useRef(null)
+  const dashboardPdfRef = useRef(null)
   const [reports, setReports] = useState([])
   const [submitting, setSubmitting] = useState(false)
   const [pdfExporting, setPdfExporting] = useState(false)
@@ -301,6 +304,9 @@ export default function App() {
   const [disabilityPage, setDisabilityPage] = useState(1)
   const [mosqueSearch, setMosqueSearch] = useState('')
   const [disabilitySearch, setDisabilitySearch] = useState('')
+  const [reportStartDate, setReportStartDate] = useState('')
+  const [reportEndDate, setReportEndDate] = useState('')
+  const [dashboardStats, setDashboardStats] = useState(null)
 
   const showToast = useCallback((message, type = 'success') => {
     setToast({ message, type })
@@ -490,6 +496,43 @@ export default function App() {
     setConfirmDelete(null)
   }
 
+  const capturePdfFromRef = async (ref, filename) => {
+    const el = ref.current
+    if (!el) throw new Error('Template ref not found')
+    await document.fonts.ready
+    await new Promise(r => setTimeout(r, 500))
+    const canvas = await html2canvas(el, { scale: 2, backgroundColor: '#ffffff', logging: false, useCORS: true, windowWidth: 794, width: 794, height: el.scrollHeight })
+    const imgData = canvas.toDataURL('image/png')
+    const imgWidth = 190
+    const imgHeight = (canvas.height * imgWidth) / canvas.width
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+    let heightLeft = imgHeight
+    let position = 0
+    const pageHeight = 297
+    doc.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight, undefined, 'FAST')
+    heightLeft -= pageHeight
+    while (heightLeft > 0) {
+      position -= pageHeight
+      doc.addPage()
+      doc.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight, undefined, 'FAST')
+      heightLeft -= pageHeight
+    }
+    doc.save(filename)
+    el.innerHTML = ''
+    showToast('تم تصدير PDF بنجاح', 'success')
+  }
+
+  const getStatusBadge = (status) => {
+    const colors = {
+      'مناسب': { bg: '#dcfce7', text: '#166534', border: '#bbf7d0' },
+      'يحتاج تحسين': { bg: '#fef9c3', text: '#854d0e', border: '#fde047' },
+      'غير متوفر': { bg: '#fee2e2', text: '#991b1b', border: '#fecaca' },
+      'لا ينطبق': { bg: '#f3f4f6', text: '#6b7280', border: '#d1d5db' },
+    }
+    const c = colors[status] || { bg: '#f3f4f6', text: '#9ca3af', border: '#e5e7eb' }
+    return `<span style="background:${c.bg};color:${c.text};border:1px solid ${c.border};font-weight:700;padding:2px 10px;border-radius:2px;font-size:11px;">${status || '\u2014'}</span>`
+  }
+
   const exportMosquePDF = async () => {
     const f = mosqueForm
     if (!f.mosque_name.trim()) { showToast('يرجى إدخال اسم المسجد أولاً', 'warning'); return }
@@ -502,50 +545,55 @@ export default function App() {
         return { name, status: ev.status || '', notes: ev.notes || '' }
       })
       const desc = (name) => FACILITY_DESCRIPTIONS[name] || ''
-      const statusBadge = (status) => {
-        const colors = {
-          'مناسب': 'background:#dcfce7;color:#166534;',
-          'يحتاج تحسين': 'background:#fef9c3;color:#854d0e;',
-          'غير متوفر': 'background:#fee2e2;color:#991b1b;',
-          'لا ينطبق': 'background:#f3f4f6;color:#6b7280;',
-        }
-        if (status && colors[status]) return `<span style="${colors[status]}font-weight:700;padding:2px 10px;border-radius:2px;font-size:11px;">${status}</span>`
-        return '<span style="color:#9ca3af;font-size:11px;">\u2014</span>'
-      }
       const contentOrEmpty = (val) => val && val.trim() ? val : 'لم تسجل ملاحظات إضافية.'
-      const el = pdfTemplateRef.current
+      const c = (val) => val && val.trim() ? val : '\u2014'
+      const el = mosquePdfRef.current
       if (!el) throw new Error('Template ref not found')
 
       el.innerHTML = `<div dir="rtl" style="width:794px;min-height:1123px;background:#fff;padding:0;font-family:Cairo,Traditonal Arabic,Arial,sans-serif;color:#111827;">
-<style>.a4-page{padding:15mm 18mm;position:relative}.page-footer{position:absolute;bottom:10mm;left:18mm;right:18mm;display:flex;justify-content:space-between;font-size:10px;color:#9ca3af;border-top:1px solid #e5e7eb;padding-top:4px;}@media print{body{background:#fff}}</style>
+<style>
+.a4-page{padding:15mm 18mm;position:relative}
+.page-footer{position:absolute;bottom:10mm;left:18mm;right:18mm;display:flex;justify-content:space-between;font-size:10px;color:#9ca3af;border-top:1px solid #e5e7eb;padding-top:4px;}
+@media print{body{background:#fff}}
+</style>
 <div class="a4-page">
 <header style="border-bottom:2px solid #1f2937;padding-bottom:12px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;">
 <div style="display:flex;align-items:center;gap:12px;"><div style="width:55px;height:55px;background:#e5e7eb;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;color:#6b7280;font-weight:700;border:2px solid #d1d5db;">شعار<br/>الجهة</div>
-<div style="text-align:right;"><h1 style="font-size:20px;font-weight:800;color:#111827;margin:0 0 2px;">تقييم ملاءمة المسجد لذوي الإعاقة</h1><p style="font-size:13px;font-weight:600;color:#374151;margin:0;">قسم ذوي الإعاقة والاحتياجات الخاصة</p></div></div>
-<div style="text-align:left;font-size:11px;font-weight:600;color:#374151;"><div>رقم: <span style="font-family:monospace;">${reportNum}</span></div><div>تاريخ: <span dir="ltr">${f.visit_date || todayIso}</span></div></div>
+<div style="text-align:right;"><h1 style="font-size:20px;font-weight:800;color:#111827;margin:0 0 2px;">نظام تقييم الوصول الشامل</h1><p style="font-size:13px;font-weight:600;color:#374151;margin:0;">قسم ذوي الإعاقة والاحتياجات الخاصة</p></div></div>
+<div style="text-align:left;font-size:11px;font-weight:600;color:#374151;"><div>رقم التقرير: <span style="font-family:monospace;">${reportNum}</span></div><div>تاريخ الإصدار: <span dir="ltr">${f.visit_date || todayIso}</span></div></div>
 </header>
 
 <section style="margin-bottom:18px;">
-<h2 style="font-size:15px;font-weight:700;color:#1f2937;margin:0 0 10px;border-right:4px solid #1f2937;padding-right:8px;">أولاً: بيانات المسجد</h2>
-<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;border:1px solid #d1d5db;padding:12px;background:#f9fafb;font-size:12px;">
-<div><span style="font-weight:700;color:#6b7280;display:block;">اسم المسجد</span><span style="font-size:14px;font-weight:700;color:#111827;">${f.mosque_name || '\u2014'}</span></div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">المنطقة</span><span style="font-size:14px;font-weight:700;">${f.region || '\u2014'}</span></div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">تاريخ الزيارة</span>${f.visit_date || '\u2014'}</div>
+<h2 style="font-size:15px;font-weight:700;color:#1f2937;margin:0 0 10px;border-right:4px solid #1f2937;padding-right:8px;">أولاً: بيانات الزيارة والمرفق</h2>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;border:1px solid #d1d5db;padding:12px;background:#f9fafb;font-size:12px;">
+<div><span style="font-weight:700;color:#6b7280;display:block;font-size:11px;">اسم المرفق / المركز</span><span style="font-size:14px;font-weight:700;color:#111827;">${f.mosque_name || '\u2014'}</span></div>
+<div><span style="font-weight:700;color:#6b7280;display:block;font-size:11px;">المنطقة / المحلة</span><span style="font-size:14px;font-weight:700;">${f.region || '\u2014'}</span></div>
+<div><span style="font-weight:700;color:#6b7280;display:block;font-size:11px;">تاريخ الزيارة الميدانية</span><span style="font-size:14px;font-weight:700;">${f.visit_date || '\u2014'}</span></div>
 </div>
 </section>
 
 <section style="margin-bottom:18px;">
-<h2 style="font-size:15px;font-weight:700;color:#1f2937;margin:0 0 10px;border-right:4px solid #1f2937;padding-right:8px;">ثانياً: تقييم مرافق المسجد لذوي الإعاقة</h2>
+<h2 style="font-size:15px;font-weight:700;color:#1f2937;margin:0 0 10px;border-right:4px solid #1f2937;padding-right:8px;">ثانياً: نتائج التقييم الميداني</h2>
 <table style="width:100%;text-align:right;font-size:11px;border-collapse:collapse;">
-<thead><tr style="background:#f3f4f6;color:#1f2937;font-weight:700;"><th style="padding:7px;border:1px solid #d1d5db;width:28px;">م</th><th style="padding:7px;border:1px solid #d1d5db;">عنصر التقييم</th><th style="padding:7px;border:1px solid #d1d5db;text-align:center;width:90px;">التقييم</th><th style="padding:7px;border:1px solid #d1d5db;">ملاحظات</th></tr></thead>
-<tbody>${facilities.map((f, i) => `<tr><td style="padding:6px;border:1px solid #d1d5db;text-align:center;color:#6b7280;">${i+1}</td><td style="padding:6px;border:1px solid #d1d5db;"><div style="font-weight:700;font-size:11px;color:#111827;">${f.name}</div><div style="font-weight:400;color:#6b7280;font-size:10px;margin-top:2px;">${desc(f.name)}</div></td><td style="padding:6px;border:1px solid #d1d5db;text-align:center;">${statusBadge(f.status)}</td><td style="padding:6px;border:1px solid #d1d5db;color:#4b5563;">${f.notes || '\u2014'}</td></tr>`).join('')}</tbody>
+<thead><tr style="background:#f3f4f6;color:#1f2937;font-weight:700;"><th style="padding:7px;border:1px solid #d1d5db;width:50%;">محور التقييم</th><th style="padding:7px;border:1px solid #d1d5db;text-align:center;width:25%;">الحالة الفنية</th><th style="padding:7px;border:1px solid #d1d5db;">ملاحظات فريق الرصد</th></tr></thead>
+<tbody>${facilities.map((f, i) => `<tr><td style="padding:6px;border:1px solid #d1d5db;"><div style="font-weight:700;font-size:11px;color:#111827;">${f.name}</div><div style="font-weight:400;color:#6b7280;font-size:10px;margin-top:2px;">${desc(f.name)}</div></td><td style="padding:6px;border:1px solid #d1d5db;text-align:center;">${getStatusBadge(f.status)}</td><td style="padding:6px;border:1px solid #d1d5db;color:#4b5563;">${c(f.notes)}</td></tr>`).join('')}</tbody>
 </table>
 </section>
 
 <section style="margin-bottom:18px;">
-<h2 style="font-size:15px;font-weight:700;color:#1f2937;margin:0 0 10px;border-right:4px solid #1f2937;padding-right:8px;">ثالثاً: التقييم النهائي</h2>
-<div style="border:1px solid #d1d5db;margin-bottom:8px;"><div style="background:#f3f4f6;padding:8px 12px;border-bottom:1px solid #d1d5db;font-weight:700;color:#1f2937;">ملاحظات عامة</div><div style="padding:10px 12px;font-size:13px;color:#4b5563;">${contentOrEmpty(f.general_notes)}</div></div>
-<div style="border:1px solid #d1d5db;"><div style="background:#f3f4f6;padding:8px 12px;border-bottom:1px solid #d1d5db;font-weight:700;color:#1f2937;">التوصيات</div><div style="padding:10px 12px;font-size:13px;color:#4b5563;">${contentOrEmpty(f.recommendations)}</div></div>
+<h2 style="font-size:15px;font-weight:700;color:#1f2937;margin:0 0 10px;border-right:4px solid #1f2937;padding-right:8px;">ثالثاً: التفاصيل الإضافية والتوصيات</h2>
+<div style="border:1px solid #d1d5db;margin-bottom:8px;">
+<div style="background:#f3f4f6;padding:8px 12px;border-bottom:1px solid #d1d5db;font-weight:700;color:#1f2937;font-size:12px;">الإيجابيات والممارسات الجيدة</div>
+<div style="padding:10px 12px;font-size:12px;color:#4b5563;min-height:30px;">${contentOrEmpty(f.recommendations)}</div>
+</div>
+<div style="border:1px solid #d1d5db;margin-bottom:8px;">
+<div style="background:#f3f4f6;padding:8px 12px;border-bottom:1px solid #d1d5db;font-weight:700;color:#1f2937;font-size:12px;">السلبيات والعوائق المرصودة</div>
+<div style="padding:10px 12px;font-size:12px;color:#4b5563;min-height:30px;">${contentOrEmpty(f.general_notes)}</div>
+</div>
+<div style="border:1px solid #d1d5db;">
+<div style="background:#f3f4f6;padding:8px 12px;border-bottom:1px solid #d1d5db;font-weight:700;color:#1f2937;font-size:12px;">التوصيات والاحتياجات الفعلية</div>
+<div style="padding:10px 12px;font-size:12px;color:#4b5563;min-height:30px;">${contentOrEmpty(f.recommendations)}</div>
+</div>
 </section>
 
 <section style="margin-top:40px;display:flex;justify-content:space-between;text-align:center;">
@@ -556,27 +604,7 @@ export default function App() {
 <div class="page-footer"><span>قسم ذوي الإعاقة والاحتياجات الخاصة</span><span>صفحة 1 من 1</span></div>
 </div></div>`
 
-      await document.fonts.ready
-      await new Promise(r => setTimeout(r, 500))
-      const canvas = await html2canvas(el, { scale: 2, backgroundColor: '#ffffff', logging: false, useCORS: true, windowWidth: 794, width: 794, height: el.scrollHeight })
-      const imgData = canvas.toDataURL('image/png')
-      const imgWidth = 190
-      const imgHeight = (canvas.height * imgWidth) / canvas.width
-      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
-      let heightLeft = imgHeight
-      let position = 0
-      const pageHeight = 297
-      doc.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight, undefined, 'FAST')
-      heightLeft -= pageHeight
-      while (heightLeft > 0) {
-        position -= pageHeight
-        doc.addPage()
-        doc.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight, undefined, 'FAST')
-        heightLeft -= pageHeight
-      }
-      doc.save(`تقييم_مسجد_${f.mosque_name.replace(/\s+/g, '_')}.pdf`)
-      el.innerHTML = ''
-      showToast('تم تصدير PDF بنجاح', 'success')
+      await capturePdfFromRef(mosquePdfRef, `تقييم_مسجد_${f.mosque_name.replace(/\s+/g, '_')}.pdf`)
     } catch (err) {
       console.error('PDF export error:', err)
       showToast('فشل في تصدير PDF - ' + err.message, 'error')
@@ -595,113 +623,80 @@ export default function App() {
       const c = (val) => val && val.trim() ? val : '\u2014'
       const yn = (v) => v === 'نعم' ? 'نعم' : 'لا'
       const needsList = f.needs?.length > 0 ? f.needs.join(' - ') : '\u2014'
-      const el = pdfTemplateRef.current
+      const el = disabilityPdfRef.current
       if (!el) throw new Error('Template ref not found')
 
       el.innerHTML = `<div dir="rtl" style="width:794px;min-height:1123px;background:#fff;padding:0;font-family:Cairo,Traditonal Arabic,Arial,sans-serif;color:#111827;">
 <style>
 .a4-page{padding:15mm 18mm;position:relative}
 .page-footer{position:absolute;bottom:10mm;left:18mm;right:18mm;display:flex;justify-content:space-between;font-size:10px;color:#9ca3af;border-top:1px solid #e5e7eb;padding-top:4px;}
-.logo-placeholder{width:60px;height:60px;background:#e5e7eb;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;color:#6b7280;font-weight:700;border:2px solid #d1d5db;}
+.logo-placeholder{width:55px;height:55px;background:#e5e7eb;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;color:#6b7280;font-weight:700;border:2px solid #d1d5db;}
 @media print{body{background:#fff}}
 </style>
 <div class="a4-page">
 <header style="border-bottom:2px solid #1f2937;padding-bottom:12px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;">
 <div style="display:flex;align-items:center;gap:12px;">
 <div class="logo-placeholder">شعار<br/>الجهة</div>
-<div style="text-align:right;"><h1 style="font-size:22px;font-weight:800;color:#111827;margin:0 0 4px;">تقييم حالات ذوي الإعاقة</h1><p style="font-size:14px;font-weight:600;color:#374151;margin:0;">قسم ذوي الإعاقة والاحتياجات الخاصة</p></div>
+<div style="text-align:right;"><h1 style="font-size:20px;font-weight:800;color:#111827;margin:0 0 2px;">استمارة تقييم حالة ذوي الإعاقة</h1><p style="font-size:13px;font-weight:600;color:#374151;margin:0;">قسم الرصد والتقييم الميداني</p></div>
 </div>
-<div style="text-align:left;font-size:11px;font-weight:600;color:#374151;"><div>رقم: <span style="font-family:monospace;">${reportNum}</span></div><div>تاريخ: <span dir="ltr">${todayIso}</span></div></div>
+<div style="text-align:left;font-size:11px;font-weight:600;color:#374151;"><div>رقم الاستمارة: <span style="font-family:monospace;">${reportNum}</span></div><div>تاريخ الرصد: <span dir="ltr">${todayIso}</span></div></div>
 </header>
 
-<section style="margin-bottom:14px;">
-<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">أولاً: البيانات الشخصية</h2>
-<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;border:1px solid #d1d5db;padding:10px;background:#f9fafb;font-size:11px;">
-<div><span style="font-weight:700;color:#6b7280;display:block;">الاسم الرباعي</span>${f.full_name}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">الجنس</span>${f.gender || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">العمر</span>${f.age || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">رقم الهاتف</span>${f.phone || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">الحالة الاجتماعية</span>${f.marital_status || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">منطقة السكن</span>${f.residence_area || '\u2014'}</div>
+<section style="margin-bottom:18px;">
+<h2 style="font-size:15px;font-weight:700;color:#1f2937;margin:0 0 10px;border-right:4px solid #1f2937;padding-right:8px;">أولاً: البيانات الأساسية والشخصية</h2>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;border:1px solid #d1d5db;padding:12px;background:#f9fafb;font-size:12px;">
+<div style="grid-column:span 2;"><span style="font-weight:700;color:#6b7280;display:block;font-size:11px;">مكان رصد الحالة</span><span style="font-size:14px;font-weight:700;color:#111827;">${f.residence_area || '\u2014'}</span></div>
+<div><span style="font-weight:700;color:#6b7280;display:block;font-size:11px;">الاسم الرباعي</span><span style="font-size:14px;font-weight:700;color:#111827;">${f.full_name}</span></div>
+<div><span style="font-weight:700;color:#6b7280;display:block;font-size:11px;">رقم الهاتف (إن وجد)</span><span style="font-size:14px;font-weight:700;">${f.phone || '\u2014'}</span></div>
+<div><span style="font-weight:700;color:#6b7280;display:block;font-size:11px;">الجنس</span><span style="font-size:14px;font-weight:700;">${f.gender || '\u2014'}</span></div>
+<div><span style="font-weight:700;color:#6b7280;display:block;font-size:11px;">العمر</span><span style="font-size:14px;font-weight:700;">${f.age || '\u2014'}</span></div>
+<div><span style="font-weight:700;color:#6b7280;display:block;font-size:11px;">منطقة السكن</span><span style="font-size:14px;font-weight:700;">${f.residence_area || '\u2014'}</span></div>
+<div><span style="font-weight:700;color:#6b7280;display:block;font-size:11px;">الحالة الاجتماعية</span><span style="font-size:14px;font-weight:700;">${f.marital_status || '\u2014'}</span></div>
 </div>
 </section>
 
-<section style="margin-bottom:14px;">
-<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">ثانياً: بيانات الإعاقة</h2>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;border:1px solid #d1d5db;padding:10px;background:#f9fafb;font-size:11px;">
-<div><span style="font-weight:700;color:#6b7280;display:block;">نوع الإعاقة</span>${f.disability_type || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">درجة الإعاقة</span>${f.disability_degree || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">سبب الإعاقة</span>${c(f.disability_cause)}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">هل الإعاقة دائمة؟</span>${yn(f.is_permanent)}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">يستخدم كرسياً متحركاً؟</span>${yn(f.uses_wheelchair)}</div>
+<section style="margin-bottom:18px;">
+<h2 style="font-size:15px;font-weight:700;color:#1f2937;margin:0 0 10px;border-right:4px solid #1f2937;padding-right:8px;">ثانياً: بيانات الإعاقة</h2>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;border:1px solid #d1d5db;padding:12px;background:#f9fafb;font-size:12px;">
+<div><span style="font-weight:700;color:#6b7280;display:block;font-size:11px;">نوع الإعاقة</span><span style="font-size:14px;font-weight:700;color:#111827;">${f.disability_type || '\u2014'}</span></div>
+<div><span style="font-weight:700;color:#6b7280;display:block;font-size:11px;">درجة الإعاقة</span><span style="font-size:14px;font-weight:700;">${f.disability_degree || '\u2014'}</span></div>
+<div><span style="font-weight:700;color:#6b7280;display:block;font-size:11px;">سبب الإعاقة</span><span style="font-size:14px;font-weight:700;">${c(f.disability_cause)}</span></div>
 </div>
 </section>
 
-<section style="margin-bottom:14px;">
-<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">ثالثاً: الحالة الصحية</h2>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;border:1px solid #d1d5db;padding:10px;background:#f9fafb;font-size:11px;">
-<div><span style="font-weight:700;color:#6b7280;display:block;">الأمراض المزمنة</span>${c(f.chronic_diseases)}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">الأدوية المستخدمة</span>${c(f.medications)}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">القدرة على الحركة</span>${f.mobility || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">ملاحظات صحية</span>${c(f.health_notes)}</div>
+<section style="margin-bottom:18px;">
+<h2 style="font-size:15px;font-weight:700;color:#1f2937;margin:0 0 10px;border-right:4px solid #1f2937;padding-right:8px;">ثالثاً: الحالة التعليمية</h2>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;border:1px solid #d1d5db;padding:12px;background:#f9fafb;font-size:12px;">
+<div><span style="font-weight:700;color:#6b7280;display:block;font-size:11px;">المستوى التعليمي</span><span style="font-size:14px;font-weight:700;color:#111827;">${f.education_level || '\u2014'}</span></div>
+<div><span style="font-weight:700;color:#6b7280;display:block;font-size:11px;">هل يدرس حالياً؟</span><span style="font-size:14px;font-weight:700;">${yn(f.is_studying)}</span></div>
+<div><span style="font-weight:700;color:#6b7280;display:block;font-size:11px;">آخر مؤهل دراسي</span><span style="font-size:14px;font-weight:700;">${c(f.last_qualification)}</span></div>
 </div>
 </section>
 
-<section style="margin-bottom:14px;">
-<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">ثالثاً: الحالة التعليمية</h2>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;border:1px solid #d1d5db;padding:10px;background:#f9fafb;font-size:11px;">
-<div><span style="font-weight:700;color:#6b7280;display:block;">المستوى التعليمي</span>${f.education_level || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">هل يدرس حالياً؟</span>${yn(f.is_studying)}</div>
-<div style="grid-column:span 2;"><span style="font-weight:700;color:#6b7280;display:block;">آخر مؤهل دراسي</span>${c(f.last_qualification)}</div>
+<section style="margin-bottom:18px;">
+<h2 style="font-size:15px;font-weight:700;color:#1f2937;margin:0 0 10px;border-right:4px solid #1f2937;padding-right:8px;">رابعاً: الاحتياجات والمتطلبات</h2>
+<div style="border:1px solid #d1d5db;padding:12px;background:#f9fafb;font-size:12px;">
+<div style="margin-bottom:8px;"><span style="font-weight:700;color:#6b7280;display:block;font-size:11px;margin-bottom:6px;">الاحتياجات الأساسية:</span><div style="display:flex;flex-wrap:wrap;gap:4px;">${needsList}</div></div>
+<div style="border-top:1px solid #d1d5db;padding-top:8px;margin-top:8px;"><span style="font-weight:700;color:#6b7280;display:block;font-size:11px;">احتياجات أخرى (اذكرها)</span><span style="font-size:14px;font-weight:700;">${c(f.other_needs)}</span></div>
 </div>
 </section>
 
-<section style="margin-bottom:14px;">
-<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">رابعاً: الاحتياجات</h2>
-<div style="border:1px solid #d1d5db;padding:10px;background:#f9fafb;font-size:11px;">
-<div style="margin-bottom:6px;"><span style="font-weight:700;color:#6b7280;display:block;">الاحتياجات المطلوبة</span>${needsList}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">احتياجات أخرى</span>${c(f.other_needs)}</div>
+<section style="margin-bottom:18px;">
+<h2 style="font-size:15px;font-weight:700;color:#1f2937;margin:0 0 10px;border-right:4px solid #1f2937;padding-right:8px;">خامساً: الملاحظات العامة</h2>
+<div style="border:1px solid #d1d5db;padding:12px;background:#f9fafb;min-height:40px;">
+<div style="font-size:12px;color:#4b5563;line-height:1.6;">${c(f.general_notes)}</div>
 </div>
 </section>
 
-<section style="margin-bottom:14px;">
-<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">خامساً: الملاحظات العامة</h2>
-<div style="border:1px solid #d1d5db;padding:10px;background:#f9fafb;font-size:11px;min-height:40px;">
-${c(f.general_notes)}
-</div>
-</section>
-
-<section style="margin-top:30px;display:flex;justify-content:space-between;text-align:center;">
-<div style="width:45%;"><p style="font-weight:700;color:#1f2937;margin-bottom:20px;">المُقيم / الباحث</p><p style="border-top:1px solid #9ca3af;padding-top:6px;font-size:11px;color:#4b5563;">الاسم: _______________ التوقيع: _______________</p><p style="font-size:10px;color:#9ca3af;margin-top:4px;">التاريخ: _______________</p></div>
-<div style="width:45%;"><p style="font-weight:700;color:#1f2937;margin-bottom:20px;">الاعتماد والمصادقة</p><p style="border-top:1px solid #9ca3af;padding-top:6px;font-size:11px;color:#4b5563;">الاسم: _______________ التوقيع: _______________</p><p style="font-size:10px;color:#9ca3af;margin-top:4px;">التاريخ: _______________ الختم: _______________</p></div>
+<section style="margin-top:40px;display:flex;justify-content:space-between;text-align:center;">
+<div style="width:45%;"><p style="font-weight:700;color:#1f2937;margin-bottom:18px;">مُعِد الاستمارة / الباحث</p><p style="border-top:1px solid #9ca3af;padding-top:6px;font-size:11px;color:#4b5563;">الاسم: _______________ التوقيع: _______________</p><p style="font-size:10px;color:#9ca3af;margin-top:4px;">التاريخ: _______________</p></div>
+<div style="width:45%;"><p style="font-weight:700;color:#1f2937;margin-bottom:18px;">الاعتماد والمصادقة</p><p style="border-top:1px solid #9ca3af;padding-top:6px;font-size:11px;color:#4b5563;">الاسم: _______________ التوقيع: _______________</p><p style="font-size:10px;color:#9ca3af;margin-top:4px;">التاريخ: _______________ الختم: _______________</p></div>
 </section>
 
 <div class="page-footer"><span>قسم ذوي الإعاقة والاحتياجات الخاصة</span><span>صفحة 1 من 1</span></div>
 </div></div>`
 
-      await document.fonts.ready
-      await new Promise(r => setTimeout(r, 500))
-      const canvas = await html2canvas(el, { scale: 2, backgroundColor: '#ffffff', logging: false, useCORS: true, windowWidth: 794, width: 794, height: el.scrollHeight })
-      const imgData = canvas.toDataURL('image/png')
-      const imgWidth = 190
-      const imgHeight = (canvas.height * imgWidth) / canvas.width
-      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
-      let heightLeft = imgHeight
-      let position = 0
-      const pageHeight = 297
-      let pageNum = 1
-      doc.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight, undefined, 'FAST')
-      heightLeft -= pageHeight
-      while (heightLeft > 0) {
-        pageNum++
-        position -= pageHeight
-        doc.addPage()
-        doc.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight, undefined, 'FAST')
-        heightLeft -= pageHeight
-      }
-      doc.save(`تقييم_حالة_${f.full_name.replace(/\s+/g, '_')}.pdf`)
-      el.innerHTML = ''
-      showToast('تم تصدير PDF بنجاح', 'success')
+      await capturePdfFromRef(disabilityPdfRef, `تقييم_حالة_${f.full_name.replace(/\s+/g, '_')}.pdf`)
     } catch (err) {
       console.error('PDF export error:', err)
       showToast('فشل في تصدير PDF - ' + err.message, 'error')
@@ -738,27 +733,32 @@ ${c(f.general_notes)}
           if (s && colors[s]) return `<span style="${colors[s]}font-weight:700;padding:2px 10px;border-radius:2px;font-size:11px;">${s}</span>`
           return '<span style="color:#9ca3af;font-size:11px;">\u2014</span>'
         }
+        const c2 = (val) => val && val.trim() ? val : '\u2014'
         el.innerHTML = `<div dir="rtl" style="width:794px;min-height:1123px;background:#fff;padding:0;font-family:Cairo,Traditonal Arabic,Arial,sans-serif;color:#111827;">
-<style>.a4-page{padding:15mm 18mm;position:relative}.page-footer{position:absolute;bottom:10mm;left:18mm;right:18mm;display:flex;justify-content:space-between;font-size:10px;color:#9ca3af;border-top:1px solid #e5e7eb;padding-top:4px;}@media print{body{background:#fff}}</style>
+<style>
+.a4-page{padding:15mm 18mm;position:relative}
+.page-footer{position:absolute;bottom:10mm;left:18mm;right:18mm;display:flex;justify-content:space-between;font-size:10px;color:#9ca3af;border-top:1px solid #e5e7eb;padding-top:4px;}
+@media print{body{background:#fff}}
+</style>
 <div class="a4-page">
 <header style="border-bottom:2px solid #1f2937;padding-bottom:12px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;">
 <div style="display:flex;align-items:center;gap:12px;"><div style="width:55px;height:55px;background:#e5e7eb;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;color:#6b7280;font-weight:700;border:2px solid #d1d5db;">شعار<br/>الجهة</div>
-<div style="text-align:right;"><h1 style="font-size:20px;font-weight:800;color:#111827;margin:0 0 2px;">تقييم ملاءمة المسجد لذوي الإعاقة</h1><p style="font-size:13px;font-weight:600;color:#374151;margin:0;">قسم ذوي الإعاقة والاحتياجات الخاصة</p></div></div>
-<div style="text-align:left;font-size:11px;font-weight:600;color:#374151;"><div>رقم: <span style="font-family:monospace;">${reportNum}</span></div><div>تاريخ: <span dir="ltr">${report.visit_date || todayIso}</span></div></div>
+<div style="text-align:right;"><h1 style="font-size:20px;font-weight:800;color:#111827;margin:0 0 2px;">نظام تقييم الوصول الشامل</h1><p style="font-size:13px;font-weight:600;color:#374151;margin:0;">قسم ذوي الإعاقة والاحتياجات الخاصة</p></div></div>
+<div style="text-align:left;font-size:11px;font-weight:600;color:#374151;"><div>رقم التقرير: <span style="font-family:monospace;">${reportNum}</span></div><div>تاريخ الإصدار: <span dir="ltr">${report.visit_date || todayIso}</span></div></div>
 </header>
 <section style="margin-bottom:18px;">
-<h2 style="font-size:15px;font-weight:700;color:#1f2937;margin:0 0 10px;border-right:4px solid #1f2937;padding-right:8px;">أولاً: بيانات المسجد</h2>
-<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;border:1px solid #d1d5db;padding:12px;background:#f9fafb;font-size:12px;">
-<div><span style="font-weight:700;color:#6b7280;display:block;">اسم المسجد</span>${report.mosque_name || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">المنطقة</span>${report.region || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">تاريخ الزيارة</span>${report.visit_date || '\u2014'}</div>
+<h2 style="font-size:15px;font-weight:700;color:#1f2937;margin:0 0 10px;border-right:4px solid #1f2937;padding-right:8px;">أولاً: بيانات الزيارة والمرفق</h2>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;border:1px solid #d1d5db;padding:12px;background:#f9fafb;font-size:12px;">
+<div style="grid-column:span 2;"><span style="font-weight:700;color:#6b7280;display:block;font-size:11px;">اسم المرفق / المركز</span><span style="font-size:14px;font-weight:700;color:#111827;">${report.mosque_name || '\u2014'}</span></div>
+<div><span style="font-weight:700;color:#6b7280;display:block;font-size:11px;">المنطقة / المحلة</span><span style="font-size:14px;font-weight:700;">${report.region || '\u2014'}</span></div>
+<div><span style="font-weight:700;color:#6b7280;display:block;font-size:11px;">تاريخ الزيارة الميدانية</span><span style="font-size:14px;font-weight:700;">${report.visit_date || '\u2014'}</span></div>
 </div>
 </section>
 <section style="margin-bottom:18px;">
-<h2 style="font-size:15px;font-weight:700;color:#1f2937;margin:0 0 10px;border-right:4px solid #1f2937;padding-right:8px;">ثانياً: تقييم مرافق المسجد لذوي الإعاقة</h2>
+<h2 style="font-size:15px;font-weight:700;color:#1f2937;margin:0 0 10px;border-right:4px solid #1f2937;padding-right:8px;">ثانياً: نتائج التقييم الميداني</h2>
 <table style="width:100%;text-align:right;font-size:11px;border-collapse:collapse;">
-<thead><tr style="background:#f3f4f6;color:#1f2937;font-weight:700;"><th style="padding:7px;border:1px solid #d1d5db;width:28px;">م</th><th style="padding:7px;border:1px solid #d1d5db;">عنصر التقييم</th><th style="padding:7px;border:1px solid #d1d5db;text-align:center;width:90px;">التقييم</th><th style="padding:7px;border:1px solid #d1d5db;">ملاحظات</th></tr></thead>
-<tbody>${facilities.map((f, i) => `<tr><td style="padding:6px;border:1px solid #d1d5db;text-align:center;color:#6b7280;">${i+1}</td><td style="padding:6px;border:1px solid #d1d5db;"><div style="font-weight:700;font-size:11px;color:#111827;">${f.name}</div><div style="font-weight:400;color:#6b7280;font-size:10px;margin-top:2px;">${desc(f.name)}</div></td><td style="padding:6px;border:1px solid #d1d5db;text-align:center;">${statusBadge(f.status)}</td><td style="padding:6px;border:1px solid #d1d5db;color:#4b5563;">${f.notes || '\u2014'}</td></tr>`).join('')}</tbody>
+<thead><tr style="background:#f3f4f6;color:#1f2937;font-weight:700;"><th style="padding:7px;border:1px solid #d1d5db;width:50%;">محور التقييم</th><th style="padding:7px;border:1px solid #d1d5db;text-align:center;width:25%;">الحالة الفنية</th><th style="padding:7px;border:1px solid #d1d5db;">ملاحظات فريق الرصد</th></tr></thead>
+<tbody>${facilities.map((f, i) => `<tr><td style="padding:6px;border:1px solid #d1d5db;"><div style="font-weight:700;font-size:11px;color:#111827;">${f.name}</div><div style="font-weight:400;color:#6b7280;font-size:10px;margin-top:2px;">${desc(f.name)}</div></td><td style="padding:6px;border:1px solid #d1d5db;text-align:center;">${getStatusBadge(f.status)}</td><td style="padding:6px;border:1px solid #d1d5db;color:#4b5563;">${c2(f.notes)}</td></tr>`).join('')}</tbody>
 </table>
 </section>
 <section style="margin-top:30px;display:flex;justify-content:space-between;text-align:center;">
@@ -769,76 +769,76 @@ ${c(f.general_notes)}
 </div></div>`
       } else {
         const needsList = report.needs?.length > 0 ? report.needs.join(' - ') : '\u2014'
+        const c2 = (val) => val && val.trim() ? val : '\u2014'
         el.innerHTML = `<div dir="rtl" style="width:794px;min-height:1123px;background:#fff;padding:0;font-family:Cairo,Traditonal Arabic,Arial,sans-serif;color:#111827;">
 <style>
 .a4-page{padding:15mm 18mm;position:relative}
 .page-footer{position:absolute;bottom:10mm;left:18mm;right:18mm;display:flex;justify-content:space-between;font-size:10px;color:#9ca3af;border-top:1px solid #e5e7eb;padding-top:4px;}
-.logo-placeholder{width:60px;height:60px;background:#e5e7eb;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;color:#6b7280;font-weight:700;border:2px solid #d1d5db;}
 @media print{body{background:#fff}}
 </style>
 <div class="a4-page">
 <header style="border-bottom:2px solid #1f2937;padding-bottom:12px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;">
 <div style="display:flex;align-items:center;gap:12px;">
-<div class="logo-placeholder">شعار<br/>الجهة</div>
-<div style="text-align:right;"><h1 style="font-size:22px;font-weight:800;color:#111827;margin:0 0 4px;">تقييم حالات ذوي الإعاقة</h1><p style="font-size:14px;font-weight:600;color:#374151;margin:0;">قسم ذوي الإعاقة والاحتياجات الخاصة</p></div>
+<div style="width:60px;height:60px;background:#e5e7eb;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;color:#6b7280;font-weight:700;border:2px solid #d1d5db;">شعار<br/>الجهة</div>
+<div style="text-align:right;"><h1 style="font-size:22px;font-weight:800;color:#111827;margin:0 0 4px;">استمارة تقييم حالة</h1><p style="font-size:14px;font-weight:600;color:#374151;margin:0;">قسم ذوي الإعاقة والاحتياجات الخاصة</p></div>
 </div>
-<div style="text-align:left;font-size:11px;font-weight:600;color:#374151;"><div>رقم: <span style="font-family:monospace;">${reportNum}</span></div><div>تاريخ: <span dir="ltr">${todayIso}</span></div></div>
+<div style="text-align:left;font-size:11px;font-weight:600;color:#374151;"><div>رقم التقرير: <span style="font-family:monospace;">${reportNum}</span></div><div>تاريخ الإصدار: <span dir="ltr">${todayIso}</span></div></div>
 </header>
 
 <section style="margin-bottom:14px;">
-<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">أولاً: البيانات الشخصية</h2>
-<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;border:1px solid #d1d5db;padding:10px;background:#f9fafb;font-size:11px;">
-<div><span style="font-weight:700;color:#6b7280;display:block;">الاسم الرباعي</span>${report.full_name || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">الجنس</span>${report.gender || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">العمر</span>${report.age || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">رقم الهاتف</span>${report.phone || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">الحالة الاجتماعية</span>${report.marital_status || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">منطقة السكن</span>${report.residence_area || '\u2014'}</div>
+<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">أولاً: بيانات مقدم الطلب</h2>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;border:1px solid #d1d5db;padding:10px;background:#f9fafb;font-size:11px;">
+<div style="grid-column:span 2;"><span style="font-weight:700;color:#6b7280;display:block;font-size:10px;">الاسم الرباعي</span><span style="font-size:13px;font-weight:700;">${report.full_name || '\u2014'}</span></div>
+<div><span style="font-weight:700;color:#6b7280;display:block;font-size:10px;">الجنس</span>${report.gender || '\u2014'}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;font-size:10px;">العمر</span>${report.age || '\u2014'}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;font-size:10px;">رقم الهاتف</span>${report.phone || '\u2014'}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;font-size:10px;">الحالة الاجتماعية</span>${report.marital_status || '\u2014'}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;font-size:10px;">منطقة السكن</span>${report.residence_area || '\u2014'}</div>
 </div>
 </section>
 
 <section style="margin-bottom:14px;">
 <h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">ثانياً: بيانات الإعاقة</h2>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;border:1px solid #d1d5db;padding:10px;background:#f9fafb;font-size:11px;">
-<div><span style="font-weight:700;color:#6b7280;display:block;">نوع الإعاقة</span>${report.disability_type || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">درجة الإعاقة</span>${report.disability_degree || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">سبب الإعاقة</span>${c(report.disability_cause)}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">إعاقة دائمة؟</span>${report.is_permanent === 'نعم' ? 'نعم' : 'لا'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">كرسي متحرك؟</span>${report.uses_wheelchair === 'نعم' ? 'نعم' : 'لا'}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;font-size:10px;">نوع الإعاقة</span>${c2(report.disability_type)}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;font-size:10px;">درجة الإعاقة</span>${c2(report.disability_degree)}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;font-size:10px;">سبب الإعاقة</span>${c2(report.disability_cause)}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;font-size:10px;">إعاقة دائمة؟</span>${report.is_permanent === 'نعم' ? 'نعم' : 'لا'}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;font-size:10px;">يستخدم كرسي متحرك؟</span>${report.uses_wheelchair === 'نعم' ? 'نعم' : 'لا'}</div>
 </div>
 </section>
 
 <section style="margin-bottom:14px;">
-<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">ثالثاً: الحالة الصحية</h2>
+<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">ثالثاً: المعلومات الطبية والصحية</h2>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;border:1px solid #d1d5db;padding:10px;background:#f9fafb;font-size:11px;">
-<div><span style="font-weight:700;color:#6b7280;display:block;">الأمراض المزمنة</span>${c(report.chronic_diseases)}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">الأدوية المستخدمة</span>${c(report.medications)}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">القدرة على الحركة</span>${report.mobility || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">ملاحظات صحية</span>${c(report.health_notes)}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;font-size:10px;">الأمراض المزمنة</span>${c2(report.chronic_diseases)}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;font-size:10px;">الأدوية المستخدمة</span>${c2(report.medications)}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;font-size:10px;">القدرة على الحركة</span>${c2(report.mobility)}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;font-size:10px;">ملاحظات صحية</span>${c2(report.health_notes)}</div>
 </div>
 </section>
 
 <section style="margin-bottom:14px;">
-<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">ثالثاً: الحالة التعليمية</h2>
+<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">رابعاً: المستوى التعليمي والمهني</h2>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;border:1px solid #d1d5db;padding:10px;background:#f9fafb;font-size:11px;">
-<div><span style="font-weight:700;color:#6b7280;display:block;">المستوى التعليمي</span>${report.education_level || '\u2014'}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">يدرس حالياً؟</span>${report.is_studying === 'نعم' ? 'نعم' : 'لا'}</div>
-<div style="grid-column:span 2;"><span style="font-weight:700;color:#6b7280;display:block;">آخر مؤهل دراسي</span>${c(report.last_qualification)}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;font-size:10px;">المستوى التعليمي</span>${c2(report.education_level)}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;font-size:10px;">يدرس حالياً؟</span>${report.is_studying === 'نعم' ? 'نعم' : 'لا'}</div>
+<div style="grid-column:span 2;"><span style="font-weight:700;color:#6b7280;display:block;font-size:10px;">آخر مؤهل دراسي</span>${c2(report.last_qualification)}</div>
 </div>
 </section>
 
 <section style="margin-bottom:14px;">
-<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">رابعاً: الاحتياجات</h2>
+<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">خامساً: الاحتياجات والخدمات المطلوبة</h2>
 <div style="border:1px solid #d1d5db;padding:10px;background:#f9fafb;font-size:11px;">
-<div style="margin-bottom:6px;"><span style="font-weight:700;color:#6b7280;display:block;">الاحتياجات</span>${needsList}</div>
-<div><span style="font-weight:700;color:#6b7280;display:block;">احتياجات أخرى</span>${c(report.other_needs)}</div>
+<div style="margin-bottom:6px;"><span style="font-weight:700;color:#6b7280;display:block;font-size:10px;">الاحتياجات</span>${needsList}</div>
+<div><span style="font-weight:700;color:#6b7280;display:block;font-size:10px;">احتياجات أخرى</span>${c2(report.other_needs)}</div>
 </div>
 </section>
 
 <section style="margin-bottom:14px;">
-<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">خامساً: الملاحظات العامة</h2>
+<h2 style="font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;border-right:4px solid #1f2937;padding-right:8px;">سادساً: التوصيات والملاحظات</h2>
 <div style="border:1px solid #d1d5db;padding:10px;background:#f9fafb;font-size:11px;min-height:40px;">
-${c(report.general_notes)}
+${c2(report.general_notes)}
 </div>
 </section>
 
