@@ -1475,6 +1475,11 @@ ${c2(resNotes)}
         </GlassCard>
         )}
 
+        <div className="mt-12 pt-4 border-t border-white/[0.04] text-center">
+          <p className="text-[10px] text-gray-500/60 tracking-wide">
+            تم التطوير بواسطة <span className="text-gray-400/80 font-medium">قسم الإعلام</span>
+          </p>
+        </div>
       </div>
 
       {/* Toast */}
